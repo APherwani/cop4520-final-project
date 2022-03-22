@@ -144,9 +144,14 @@ fn decrypt_directory() {
 
     println!("\n\n[{}]\n\n", keystore.filepath);
 
+    // TODO: This doesn't sort in the order we want it to. It should be:
+    // 0_chunk, 1_chunk, 2_chunk, 3_chunk, ..., n_chunk, but instead it's:
+    // 0_chunk, 1_chunk, 11_chunk, 12_chunk, ..., 20_chunk, 21_chunk, ...
     for filename in keystore.nonce.keys().sorted() {
         let nonce_key = keystore.nonce.get(filename).unwrap();
         let plaintext = decrypt_file(&filename, &cipher, &nonce_key);
-        println!("{plaintext}");
+        print!("{plaintext}");
     }
+
+    println!();
 }
