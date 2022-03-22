@@ -1,41 +1,25 @@
-#[macro_use]
 extern crate dotenv;
 
-use chacha20poly1305::aead::{Aead, NewAead};
-use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
+mod crypto;
+mod aws;
+
+use chacha20poly1305::aead::{NewAead};
+use chacha20poly1305::{ChaCha20Poly1305, Key,};
+use crypto::KeyStore;
+use dotenv::dotenv;
 use itertools::Itertools;
-use s3::creds::Credentials;
-use s3::Bucket;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpListener;
 use uuid::Uuid;
-use dotenv::dotenv;
-use std::env;
 
-/// Contains the main encryption key used for the `ChaCha20Poly1305` cipher
-/// along with a map of nonce keys used to encrypt file chunks.
-#[derive(Deserialize, Serialize, Debug)]
-struct KeyStore {
-    /// The path of the original unencrypted file.
-    filepath: String,
-    /// This is the master encryption key used for the cipher. It **must** be 32 bytes.
-    encryption_key: String,
-    /// In this hashmap, the key refers to the name of the encrypted file
-    /// and the value refers to the nonce key used to encrypt the file.
-    /// All nonce keys **must** be 24 bytes.
-    nonce: HashMap<String, String>,
-}
-
-const CHUNK_SIZE: usize = 16_000;
+const CHUNK_SIZE: usize = 250;
 const ENCRYPTION_DIR: &str = "./encrypted";
 
 #[tokio::main]
 async fn main() {
+    dotenv().expect("Failed to load .env");
+
     // Create a path to the desired file
     let path = Path::new("./medium_sized_file.txt");
     let display = path.display();
@@ -53,11 +37,7 @@ async fn main() {
         Ok(_) => println!("Read new file containing {} characters.", s.len()),
     }
 
-    let mut keystore = KeyStore {
-        filepath: path.display().to_string(),
-        encryption_key: Uuid::new_v4().to_string()[..32].to_string(),
-        nonce: HashMap::new(),
-    };
+    let mut keystore = KeyStore::new(path.display().to_string());
 
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
@@ -65,7 +45,7 @@ async fn main() {
 
     // Remove the old encryption directory before the new one is created so we
     // don't end up with a bunch of old encrypted files but a new encryption key
-    std::fs::remove_dir_all(ENCRYPTION_DIR).expect("Failed to remove encryption directory");
+    std::fs::remove_dir_all(ENCRYPTION_DIR).ok();
     std::fs::create_dir_all(ENCRYPTION_DIR).expect("Failed to create encryption directory");
 
     for (index, chunk) in chunks.iter().enumerate() {
@@ -75,27 +55,14 @@ async fn main() {
             Uuid::new_v4().to_string()
         );
 
-        // encrypt_file(&filename, &chunk, &cipher, nonce_key.as_ref());
+        let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
 
-        let nonce = Nonce::from_slice(nonce_key.as_bytes());
-        let ciphertext = cipher
-            .encrypt(nonce, chunk.as_ref())
-            .expect("Failed to encrypt text");
-    
-        write_to_bucket(&filename, ciphertext).await;
+        write_to_file(&filename, bytes);
 
         keystore.nonce.insert(filename, nonce_key);
     }
 
-    let key_json = serde_json::to_string_pretty(&keystore).expect("Failed to serialize keystore.");
-    let path = format!("{ENCRYPTION_DIR}/keystore.json");
-    let keystore_path = Path::new(&path);
-    let mut keystore_file = File::create(keystore_path).expect("Failed to create keystore file");
-
-    match keystore_file.write_all(&key_json.to_string().as_bytes()) {
-        Ok(_) => println!("Keystore saved to: {}", keystore_path.display()),
-        Err(why) => println!("Error saving {}: {why}", keystore_path.display()),
-    }
+    keystore.write_to_file(&format!("{ENCRYPTION_DIR}/keystore.json"));
 }
 
 fn split_text(s: &String, chunk_size: usize) -> Vec<String> {
@@ -107,99 +74,11 @@ fn split_text(s: &String, chunk_size: usize) -> Vec<String> {
         .collect::<Vec<String>>();
 }
 
-fn encrypt_file(filename: &str, plaintext: &str, cipher: &ChaCha20Poly1305, nonce_key: &str) {
-    let nonce = Nonce::from_slice(nonce_key.as_bytes());
-    let ciphertext = cipher
-        .encrypt(nonce, plaintext.as_ref())
-        .expect("Failed to encrypt text");
-
+fn write_to_file(filename: &str, bytes: Vec<u8>) {
     let mut file = File::create(filename).expect(&format!("Failed to open file: {filename}"));
 
-    match file.write(&ciphertext) {
+    match file.write(&bytes) {
         Ok(bytes) => println!("{filename} saved => {bytes} bytes"),
         Err(why) => println!("Error saving encrypted file: {why}"),
     }
-}
-
-#[allow(unused)]
-fn decrypt_file(filename: &str, cipher: &ChaCha20Poly1305, nonce_key: &str) -> String {
-    let path = Path::new(filename);
-    let display = path.display();
-    let mut file = File::open(&path).expect(&format!("Couldn't open {display}"));
-    let mut buffer = Vec::new();
-
-    file.read_to_end(&mut buffer)
-        .expect(&format!("Couldn't read {display}"));
-
-    let nonce = Nonce::from_slice(nonce_key.as_bytes());
-    let plaintext = match cipher.decrypt(nonce, buffer.as_ref()) {
-        Ok(value) => {
-            String::from_utf8(value).expect(&format!("Couldn't decrypt text from file: {filename}"))
-        }
-        Err(why) => panic!("Failed to decrypt text: {why}"),
-    };
-
-    return plaintext;
-}
-
-/// For debug purposes. Decrypts all files in `ENCRYPTION_DIR` and
-/// prints the resulting content.
-#[allow(unused)]
-fn decrypt_directory() {
-    let mut json_string = String::new();
-    let mut keystore_file =
-        File::open(format!("{ENCRYPTION_DIR}/keystore.json")).expect("Couldn't open keystore file");
-
-    keystore_file
-        .read_to_string(&mut json_string)
-        .expect("Failed to read keystore file");
-
-    let keystore: KeyStore =
-        serde_json::from_str(&json_string).expect("Couldn't parse keystore JSON file");
-
-    let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
-    let cipher = ChaCha20Poly1305::new(cipher_key);
-
-    println!("\n\n[{}]\n\n", keystore.filepath);
-
-    let filenames = keystore
-        .nonce
-        .keys()
-        .sorted_by(|a, b| alphanumeric_sort::compare_str(a, b));
-
-    for filename in filenames {
-        let nonce_key = keystore.nonce.get(filename).unwrap();
-        let plaintext = decrypt_file(&filename, &cipher, &nonce_key);
-        print!("{plaintext}");
-    }
-
-    println!();
-}
-
-async fn write_to_bucket(filename: &str, content: Vec<u8>) {
-    let access_key: String = String::from("");
-    let secret_key: String = String::from("");
-
-    let credentials = match Credentials::new(Some(&access_key), Some(&secret_key), None, None, None)
-    {
-        Err(why) => panic!("Invalid creds. Error thrown {}", why),
-        Ok(credentials) => credentials,
-    };
-
-    let bucket_name = "cop4520-final-project-bucket";
-    let region = "us-east-1"
-        .parse()
-        .expect("Something went wrong parsing region.");
-    let bucket = Bucket::new(bucket_name, region, credentials)
-        .expect("Something went wrong creating the bucket.");
-    // let content = "very small string".as_bytes();
-
-    println!("hi");
-
-    // Async variant with `tokio` or `async-std` features
-    let (_, _code) = bucket
-        .put_object(filename, &content)
-        .await
-        .expect("Something went wrong putting object in bucket.");
-    println!("Code is {}", _code);
 }
