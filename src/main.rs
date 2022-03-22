@@ -82,3 +82,21 @@ fn write_to_file(filename: &str, bytes: Vec<u8>) {
         Err(why) => println!("Error saving encrypted file: {why}"),
     }
 }
+
+#[test]
+fn test_encrypt_and_depcry() {
+    let test_string = "The fox jumped over the fence.";
+
+    let mut keystore = KeyStore::new(String::from("file.test"));
+
+    let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
+    let cipher = ChaCha20Poly1305::new(cipher_key);
+
+    let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
+
+    let bytes = crypto::encrypt(&test_string, &cipher, nonce_key.as_ref());
+
+    let decrypted_string = crypto::decrypt(&bytes, &cipher, nonce_key.as_ref());
+
+    assert_eq!(test_string, decrypted_string);
+}
