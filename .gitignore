@@ -18,3 +18,4 @@ Cargo.lock
 *.bin
 encrypted/
 .DS_Store
+.env

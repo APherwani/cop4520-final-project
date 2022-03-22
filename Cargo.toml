@@ -12,6 +12,9 @@ async-std = "1.10.0"
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 alphanumeric-sort = "1.4.4"
+tokio = { version = "1.17.0", features = ["full"] }
+rust-s3 = "0.30.0"
+dotenv = "0.15.0"
 
 [dependencies.uuid]
 version = "1.0.0-alpha.1"

@@ -1,12 +1,21 @@
+#[macro_use]
+extern crate dotenv;
+
 use chacha20poly1305::aead::{Aead, NewAead};
 use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use itertools::Itertools;
+use s3::creds::Credentials;
+use s3::Bucket;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpListener;
 use uuid::Uuid;
+use dotenv::dotenv;
+use std::env;
 
 /// Contains the main encryption key used for the `ChaCha20Poly1305` cipher
 /// along with a map of nonce keys used to encrypt file chunks.
@@ -22,10 +31,11 @@ struct KeyStore {
     nonce: HashMap<String, String>,
 }
 
-const CHUNK_SIZE: usize = 500;
+const CHUNK_SIZE: usize = 16_000;
 const ENCRYPTION_DIR: &str = "./encrypted";
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Create a path to the desired file
     let path = Path::new("./medium_sized_file.txt");
     let display = path.display();
@@ -65,7 +75,14 @@ fn main() {
             Uuid::new_v4().to_string()
         );
 
-        encrypt_file(&filename, &chunk, &cipher, nonce_key.as_ref());
+        // encrypt_file(&filename, &chunk, &cipher, nonce_key.as_ref());
+
+        let nonce = Nonce::from_slice(nonce_key.as_bytes());
+        let ciphertext = cipher
+            .encrypt(nonce, chunk.as_ref())
+            .expect("Failed to encrypt text");
+    
+        write_to_bucket(&filename, ciphertext).await;
 
         keystore.nonce.insert(filename, nonce_key);
     }
@@ -157,4 +174,32 @@ fn decrypt_directory() {
     }
 
     println!();
+}
+
+async fn write_to_bucket(filename: &str, content: Vec<u8>) {
+    let access_key: String = String::from("");
+    let secret_key: String = String::from("");
+
+    let credentials = match Credentials::new(Some(&access_key), Some(&secret_key), None, None, None)
+    {
+        Err(why) => panic!("Invalid creds. Error thrown {}", why),
+        Ok(credentials) => credentials,
+    };
+
+    let bucket_name = "cop4520-final-project-bucket";
+    let region = "us-east-1"
+        .parse()
+        .expect("Something went wrong parsing region.");
+    let bucket = Bucket::new(bucket_name, region, credentials)
+        .expect("Something went wrong creating the bucket.");
+    // let content = "very small string".as_bytes();
+
+    println!("hi");
+
+    // Async variant with `tokio` or `async-std` features
+    let (_, _code) = bucket
+        .put_object(filename, &content)
+        .await
+        .expect("Something went wrong putting object in bucket.");
+    println!("Code is {}", _code);
 }
