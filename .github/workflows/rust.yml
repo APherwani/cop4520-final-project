@@ -20,5 +20,7 @@ jobs:
       run: cargo build --verbose
     - name: lint
       run: cargo clippy --verbose --fix
+    - name: Create .env
+      run: echo "ACCESS_KEY=${{ secrets.ACCESS_KEY }}\nSECRET_KEY=${{ secrets.SECRET_KEY }}" > .env
     - name: Run tests
       run: cargo test --verbose
