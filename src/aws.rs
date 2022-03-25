@@ -78,3 +78,27 @@ pub async fn delete_object(path: &str) -> u16 {
 
     return code;
 }
+
+pub async fn list_objects(directory: &str) {
+    let access_key = env::var("ACCESS_KEY").expect("Missing variable ACCESS_KEY");
+    let secret_key = env::var("SECRET_KEY").expect("Missing variable SECRET_KEY");
+    
+    let credentials = match Credentials::new(Some(&access_key), Some(&secret_key), None, None, None)
+    {
+        Err(why) => panic!("Invalid credentials. Error thrown {why}"),
+        Ok(credentials) => credentials,
+    };
+
+    let bucket_name = "cop4520-final-project-bucket";
+    let region = "us-east-1"
+        .parse()
+        .expect("Something went wrong parsing the region");
+    let bucket = Bucket::new(bucket_name, region, credentials)
+        .expect("Something went wrong initializing bucket.");
+
+    let results = bucket.list(directory.to_string(), Some("/".to_string()))
+        .await
+        .expect("Something failed listing items in the bucket.");
+
+    println!("{:?}", results[0]);
+}
