@@ -3,11 +3,12 @@
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
-\usepackage{algorithmic}
+\usepackage{algorithm,algpseudocode}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{graphicx}
+\usepackage{listings}
 \graphicspath{ {./} }
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -206,6 +207,25 @@ This can go right from encryption, to sending the item off to the bucket.
 On this flip side, during the retrieval process, we can potentially parallelize the retrieval from the S3 bucket all the way to decryption.
 At the moment, our code is completely sequential and we are working on parallelizing the aforementioned tasks.
 
+The parallelized storage and retrieval algorithm is described below.
+
+\begin{algorithm}
+	\caption{Parallelized Bucket Storage}\label{storage}
+	\begin{algpsuedocode}
+		% \ForAll{$i$ \in Threads}
+		% \State BucketWrite{$i$}
+		% \Return{Response}
+	\Procedure{BucketWrite}{$i$}
+	\State $c\gets Creds$
+	\If{$b$.empty()}
+	\State $b\gets Bucket$
+	\Else
+	\State $Threads[$i$] \gets b$
+	\EndElse
+	\EndProcedure
+	\end{algpsuedocode}
+\end{algorithm}
+
 \subsection{Storage and Retrieval}
 
 In order to simulate the experience of storing and retrieving from a file store we decided to use AWS S3 buckets.
@@ -214,12 +234,35 @@ into how a file can be split apart into smaller and more manageable fragments (c
 By that logic it didn't seem worth it to try to figure out a complicated way of storing it.
 
 On the other hand we also wanted something that was non-trivial.
-By this we mean that we did not want to just paste the files in local storage.
+By this we mean that we did not want to just paste the files in local storage. 
 
 For those reasons we decided we wanted to go with some cloud storage option.
 But there were still other options like Azure Blob Storage.
 Unfortunately we could not use blob storage because it does not have an officially supported Rust SDK.
-S3 on the other hand seemed to have promising support which is why we picked AWS S3 buckets.
+S3 on the other hand seemed to have promising support which is why we picked AWS S3 buckets. Additionally, S3 allows for
+large PUT operations, all the way up to 5GB, making it capable of testing sizeable file inputs, and storing up to 50TB in 
+one S3 instance. Another benefit is the ability to pay as we go, with assurance that large tests will not be interrupted 
+even in during significant spikes in network traffic. The reliability and availability of S3 storage makes it a perfect 
+platform for facilitating our storage system and developing to scale. 
+
+The rust-s3 library simplifies interactions with Amazon S3 buckets with built in asynchronous API features, 
+which can be deactivated if needed. Full suppport for operations including put, get, and delete allows for 
+cleaner Rust code. In terms of file security, the methods presign\_get and presign\_put allows us to upload files
+to a bucket, and selectively distribute the link to team members without concern for files being visible as
+they are stored at a presigned URL. 
+
+One of the rust-s3 library's default features is Tokio. The Tokio asynchronous runtime for Rust provides flexible, 
+thread-safe, and performant APIs for storing and retrieving objects in our buckets. GET and PUT functions for objects
+and object streams with Tokio methods are tokio::io::AsyncWriteExt and tokio::io::AsyncReadExt. The Tokio runtime harnesses
+a work-stealing scheduler, a multithreaded scheduler in which a processor has an assigned thread queue with their own 
+sequential instructions. However, what distinguishes the work-stealing scheduler is the fact that threads can spawn new tasks 
+that can be parallelized with the code currently being executed. As the new tasks are placed on the processor's queue. When the 
+queue is empty, a processor examines other queues in an effort to adopt extra tasks, effectively dealing with idle processors 
+by balancing the excess workload spawned by other threads. This is where the strategy gets its name, by \textit{stealing} and
+distributing work until it is all dealt with by highly parallelized task execution. This can be particularly useful in our 
+application, as chunking for multiple files may imply uneven workloads by forking more or less threads across different processors, 
+especially when working with larger files, or scaling the application in the future.
+
 
 \subsection{Why Rust?}
 
@@ -291,6 +334,10 @@ to the open source Rust crates that we used in our project.
 \begin{thebibliography}{00}
 \bibitem{b1} A. Langley, W.-T. Chang, N. Mavrogiannopoulos, J. Strombergson, and S. Josefsson, The ChaCha Stream Cipher for Transport Layer Security, 24-Jan-2014. [Online]. Available: https://tools.ietf.org/id/draft-mavrogiannopoulos-chacha-tls-01.html.
 \bibitem{b2} Y. Nir and A. Langley, “ChaCha20 and Poly1305 for IETF Protocols,” Document search and retrieval page, May-2015. [Online]. Available: https://datatracker.ietf.org/doc/html/rfc7539.
+\bibitem{b3} https://tokio.rs/.
+\bibitem{b4} https://crates.io/crates/rust-s3.
+\bibitem{b5} https://aws.amazon.com/s3/faqs/.
+
 % \bibitem{b3} I. S. Jacobs and C. P. Bean, ``Fine particles, thin films and exchange anisotropy,'' in Magnetism, vol. III, G. T. Rado and H. Suhl, Eds. New York: Academic, 1963, pp. 271--350.
 % \bibitem{b4} K. Elissa, ``Title of paper if known,'' unpublished.
 % \bibitem{b5} R. Nicole, ``Title of paper with only first word capitalized,'' J. Name Stand. Abbrev., in press.
