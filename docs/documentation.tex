@@ -234,12 +234,16 @@ into how a file can be split apart into smaller and more manageable fragments (c
 By that logic it didn't seem worth it to try to figure out a complicated way of storing it.
 
 On the other hand we also wanted something that was non-trivial.
-By this we mean that we did not want to just paste the files in local storage.
+By this we mean that we did not want to just paste the files in local storage. 
 
 For those reasons we decided we wanted to go with some cloud storage option.
 But there were still other options like Azure Blob Storage.
 Unfortunately we could not use blob storage because it does not have an officially supported Rust SDK.
-S3 on the other hand seemed to have promising support which is why we picked AWS S3 buckets.
+S3 on the other hand seemed to have promising support which is why we picked AWS S3 buckets. Additionally, S3 allows for
+large PUT operations, all the way up to 5GB, making it capable of testing sizeable file inputs, and storing up to 50TB in 
+one S3 instance. Another benefit is the ability to pay as we go, with assurance that large tests will not be interrupted 
+even in during significant spikes in network traffic. The reliability and availability of S3 storage makes it a perfect 
+platform for facilitating our storage system and developing to scale. 
 
 The rust-s3 library simplifies interactions with Amazon S3 buckets with built in asynchronous API features, 
 which can be deactivated if needed. Full suppport for operations including put, get, and delete allows for 
@@ -330,6 +334,10 @@ to the open source Rust crates that we used in our project.
 \begin{thebibliography}{00}
 \bibitem{b1} A. Langley, W.-T. Chang, N. Mavrogiannopoulos, J. Strombergson, and S. Josefsson, The ChaCha Stream Cipher for Transport Layer Security, 24-Jan-2014. [Online]. Available: https://tools.ietf.org/id/draft-mavrogiannopoulos-chacha-tls-01.html.
 \bibitem{b2} Y. Nir and A. Langley, “ChaCha20 and Poly1305 for IETF Protocols,” Document search and retrieval page, May-2015. [Online]. Available: https://datatracker.ietf.org/doc/html/rfc7539.
+\bibitem{b3} https://tokio.rs/.
+\bibitem{b4} https://crates.io/crates/rust-s3.
+\bibitem{b5} https://aws.amazon.com/s3/faqs/.
+
 % \bibitem{b3} I. S. Jacobs and C. P. Bean, ``Fine particles, thin films and exchange anisotropy,'' in Magnetism, vol. III, G. T. Rado and H. Suhl, Eds. New York: Academic, 1963, pp. 271--350.
 % \bibitem{b4} K. Elissa, ``Title of paper if known,'' unpublished.
 % \bibitem{b5} R. Nicole, ``Title of paper with only first word capitalized,'' J. Name Stand. Abbrev., in press.
