@@ -3,11 +3,12 @@
 % The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
-\usepackage{algorithmic}
+\usepackage{algorithm,algpseudocode}
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{graphicx}
+\usepackage{listings}
 \graphicspath{ {./} }
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -206,6 +207,25 @@ This can go right from encryption, to sending the item off to the bucket.
 On this flip side, during the retrieval process, we can potentially parallelize the retrieval from the S3 bucket all the way to decryption.
 At the moment, our code is completely sequential and we are working on parallelizing the aforementioned tasks.
 
+The parallelized storage and retrieval algorithm is described below.
+
+\begin{algorithm}
+	\caption{Parallelized Bucket Storage}\label{storage}
+	\begin{algpsuedocode}
+		% \ForAll{$i$ \in Threads}
+		% \State BucketWrite{$i$}
+		% \Return{Response}
+	\Procedure{BucketWrite}{$i$}
+	\State $c\gets Creds$
+	\If{$b$.empty()}
+	\State $b\gets Bucket$
+	\Else
+	\State $Threads[$i$] \gets b$
+	\EndElse
+	\EndProcedure
+	\end{algpsuedocode}
+\end{algorithm}
+
 \subsection{Storage and Retrieval}
 
 In order to simulate the experience of storing and retrieving from a file store we decided to use AWS S3 buckets.
@@ -220,6 +240,25 @@ For those reasons we decided we wanted to go with some cloud storage option.
 But there were still other options like Azure Blob Storage.
 Unfortunately we could not use blob storage because it does not have an officially supported Rust SDK.
 S3 on the other hand seemed to have promising support which is why we picked AWS S3 buckets.
+
+The rust-s3 library simplifies interactions with Amazon S3 buckets with built in asynchronous API features, 
+which can be deactivated if needed. Full suppport for operations including put, get, and delete allows for 
+cleaner Rust code. In terms of file security, the methods presign\_get and presign\_put allows us to upload files
+to a bucket, and selectively distribute the link to team members without concern for files being visible as
+they are stored at a presigned URL. 
+
+One of the rust-s3 library's default features is Tokio. The Tokio asynchronous runtime for Rust provides flexible, 
+thread-safe, and performant APIs for storing and retrieving objects in our buckets. GET and PUT functions for objects
+and object streams with Tokio methods are tokio::io::AsyncWriteExt and tokio::io::AsyncReadExt. The Tokio runtime harnesses
+a work-stealing scheduler, a multithreaded scheduler in which a processor has an assigned thread queue with their own 
+sequential instructions. However, what distinguishes the work-stealing scheduler is the fact that threads can spawn new tasks 
+that can be parallelized with the code currently being executed. As the new tasks are placed on the processor's queue. When the 
+queue is empty, a processor examines other queues in an effort to adopt extra tasks, effectively dealing with idle processors 
+by balancing the excess workload spawned by other threads. This is where the strategy gets its name, by \textit{stealing} and
+distributing work until it is all dealt with by highly parallelized task execution. This can be particularly useful in our 
+application, as chunking for multiple files may imply uneven workloads by forking more or less threads across different processors, 
+especially when working with larger files, or scaling the application in the future.
+
 
 \subsection{Why Rust?}
 
