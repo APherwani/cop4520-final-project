@@ -30,13 +30,7 @@ async fn main() {
     }
 }
 
-fn encrypt(args: &EncryptCommand) {
-    let EncryptCommand {
-        file_path,
-        chunk_size,
-        output_dir,
-    } = args;
-
+fn read_file(file_path: &String) -> String {
     // Create a path to the desired file
     let path = Path::new(file_path);
     let display = path.display();
@@ -54,15 +48,28 @@ fn encrypt(args: &EncryptCommand) {
         Ok(_) => println!("Read new file containing {} characters.", s.len()),
     }
 
-    let mut keystore = KeyStore::new(path.display().to_string());
+    return s;
+}
+
+fn encrypt(args: &EncryptCommand) {
+    let EncryptCommand {
+        file_path,
+        chunk_size,
+        output_dir,
+    } = args;
+
+    
+    let file_content = read_file(&file_path);
+    let mut keystore = KeyStore::new(file_path.to_string());
 
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
-    let chunks = split_text(&s, *chunk_size);
+    let chunks = split_text(&file_content, *chunk_size);
 
-    let output_dir = Path::new(output_dir.as_deref().unwrap_or("./"));
-
-    std::fs::create_dir_all(output_dir).expect("Failed to create output directory");
+    match output_dir {
+        Some(path) => std::fs::create_dir_all(path).expect("Failed to create output directory"),
+        None => ()
+    }
 
     for (index, chunk) in chunks.iter().enumerate() {
         let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
