@@ -1,3 +1,4 @@
+use crate::aws;
 use chacha20poly1305::aead::{Aead, NewAead};
 use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use itertools::Itertools;
@@ -5,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::Path;
 use uuid::Uuid;
 
 /// Contains the main encryption key used for the `ChaCha20Poly1305` cipher
@@ -74,25 +74,11 @@ pub fn decrypt(bytes: &Vec<u8>, cipher: &ChaCha20Poly1305, nonce_key: &str) -> S
     return plaintext;
 }
 
-/// For debug purposes. Decrypts all files in the given directory and
-/// prints the resulting content. Note that `directory` **must** contain
-/// a file named `keystore.json`
-pub fn decrypt_directory(directory: &str) {
-    let path = Path::new(directory).join("keystore.json");
-    let mut json_string = String::new();
-    let mut keystore_file = File::open(path).expect("Couldn't open keystore file");
-
-    keystore_file
-        .read_to_string(&mut json_string)
-        .expect("Failed to read keystore file");
-
-    let keystore: super::KeyStore =
-        serde_json::from_str(&json_string).expect("Couldn't parse keystore JSON file");
-
+pub async fn decrypt_to_file(keystore_path: &str, output_file: &Option<String>) {
+    let keystore = KeyStore::from_file(keystore_path);
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
-
-    println!("\n\n[{}]\n\n", keystore.filepath);
+    let mut plaintext = String::new();
 
     let filenames = keystore
         .nonce
@@ -100,6 +86,7 @@ pub fn decrypt_directory(directory: &str) {
         .sorted_by(|a, b| alphanumeric_sort::compare_str(a, b));
 
     for filename in filenames {
+        println!("Decrypting {}", filename);
         let nonce_key = keystore.nonce.get(filename).unwrap();
         let mut file = File::open(&filename).expect(&format!("Couldn't open {filename}"));
         let mut buffer = Vec::new();
@@ -107,10 +94,54 @@ pub fn decrypt_directory(directory: &str) {
         file.read_to_end(&mut buffer)
             .expect(&format!("Couldn't read {filename}"));
 
-        let plaintext = decrypt(&buffer, &cipher, &nonce_key);
-
-        print!("{plaintext}");
+        plaintext.push_str(&decrypt(&buffer, &cipher, &nonce_key));
     }
 
-    println!();
+    let filepath = output_file.as_ref().unwrap_or(&keystore.filepath);
+
+    let mut file = match File::create(&filepath) {
+        Ok(value) => value,
+        Err(why) => panic!("Failed to create output file {why}")
+    };
+
+    match file.write_all(&plaintext.as_bytes()) {
+        Ok(()) => println!("Output saved to {filepath}"),
+        Err(why) => println!("Error saving encrypted file: {why}"),
+    }
+}
+
+pub async fn decrypt_from_bucket(keystore_path: &str, output_file: &Option<String>) {
+    let keystore = KeyStore::from_file(keystore_path);
+    let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
+    let cipher = ChaCha20Poly1305::new(cipher_key);
+    let mut plaintext = String::new();
+
+    let filenames = keystore
+        .nonce
+        .keys()
+        .sorted_by(|a, b| alphanumeric_sort::compare_str(a, b));
+
+    for filename in filenames {
+        println!("Decrypting {}", filename);
+        let nonce_key = keystore.nonce.get(&String::from(filename.clone())).unwrap();
+        let mut file = aws::read_from_bucket(&String::from(filename.clone())).await;
+        // let mut buffer = Vec::new();
+
+        // file.read_to_end(&mut buffer)
+        //     .expect(&format!("Couldn't read {filename}"));
+
+        plaintext.push_str(&decrypt(&file, &cipher, &nonce_key));
+    }
+
+    let filepath = output_file.as_ref().unwrap_or(&keystore.filepath);
+
+    let mut file = match File::create(&filepath) {
+        Ok(value) => value,
+        Err(why) => panic!("Failed to create output file {why}")
+    };
+
+    match file.write_all(&plaintext.as_bytes()) {
+        Ok(()) => println!("Output saved to {filepath}"),
+        Err(why) => println!("Error saving encrypted file: {why}"),
+    }
 }

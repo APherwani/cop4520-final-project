@@ -17,5 +17,6 @@ Cargo.lock
 .vscode
 *.bin
 encrypted/
+decrypted/
 .DS_Store
 .env
