@@ -79,7 +79,7 @@ pub async fn delete_object(path: &str) -> u16 {
     return code;
 }
 
-pub async fn list_objects(directory: &str) {
+pub async fn list_objects(directory: &str) -> Vec<String> {
     let access_key = env::var("ACCESS_KEY").expect("Missing variable ACCESS_KEY");
     let secret_key = env::var("SECRET_KEY").expect("Missing variable SECRET_KEY");
     
@@ -100,5 +100,17 @@ pub async fn list_objects(directory: &str) {
         .await
         .expect("Something failed listing items in the bucket.");
 
-    println!("{:?}", results[0]);
+    let mut list = Vec::new();
+
+    for item in &results[0].contents {
+        list.push(item.key.clone());
+    }
+    return list;
+}
+
+pub async fn delete_all(directory: &str) {
+    let paths = list_objects(directory).await;
+    for path in paths {
+        delete_object(&path).await;
+    }
 }

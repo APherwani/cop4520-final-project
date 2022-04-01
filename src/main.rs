@@ -12,6 +12,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use uuid::Uuid;
+use aws::write_to_bucket;
 
 const CHUNK_SIZE: usize = 250;
 const ENCRYPTION_DIR: &str = "./encrypted";
@@ -57,13 +58,13 @@ async fn main() {
 
     //     let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
 
-    //     write_to_file(&filename, bytes);
+    //     write_to_bucket(&filename, bytes).await;
 
     //     keystore.nonce.insert(filename, nonce_key);
     // }
 
     // keystore.write_to_file(&format!("{ENCRYPTION_DIR}/keystore.json"));
-    aws::list_objects("encrypted/").await;
+    aws::delete_all("encrypted/").await;
 }
 
 fn split_text(s: &String, chunk_size: usize) -> Vec<String> {
