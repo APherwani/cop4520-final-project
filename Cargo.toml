@@ -1,5 +1,5 @@
 [package]
-name = "cop4520-final-rpoject"
+name = "cop4520-final-project"
 version = "0.1.0"
 edition = "2021"
 
@@ -15,6 +15,7 @@ alphanumeric-sort = "1.4.4"
 tokio = { version = "1.17.0", features = ["full"] }
 rust-s3 = "0.30.0"
 dotenv = "0.15.0"
+clap = { version = "3.1.6", features = ["derive"] }
 
 [dependencies.uuid]
 version = "1.0.0-alpha.1"
