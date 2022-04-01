@@ -23,9 +23,10 @@ async fn main() {
     let args = CLIArgs::parse();
 
     match &args.command {
-        Commands::Encrypt(command) => encrypt(&command),
+        Commands::Encrypt(command) => encrypt(&command).await,
         Commands::Decrypt(command) => {
-            crypto::decrypt_to_file(&command.keystore_path, &command.output_file)
+            // crypto::decrypt_to_file(&command.keystore_path, &command.output_file).await
+            crypto::decrypt_from_bucket(&command.keystore_path, &command.output_file).await
         }
     }
 }
@@ -51,14 +52,13 @@ fn read_file(file_path: &String) -> String {
     return s;
 }
 
-fn encrypt(args: &EncryptCommand) {
+ async fn encrypt(args: &EncryptCommand) {
     let EncryptCommand {
         file_path,
         chunk_size,
         output_dir,
     } = args;
 
-    
     let file_content = read_file(&file_path);
     let mut keystore = KeyStore::new(file_path.to_string());
 
@@ -67,23 +67,35 @@ fn encrypt(args: &EncryptCommand) {
     let chunks = split_text(&file_content, *chunk_size);
 
     match output_dir {
-        Some(path) => std::fs::create_dir_all(path).expect("Failed to create output directory"),
-        None => ()
+        Some(dir) => std::fs::create_dir_all(dir).expect("Failed to create output directory"),
+        None => (),
     }
 
+    // If the output directory is passed, we'll save the chunks to the user's own
+    // computer, otherwise, we'll upload it to the AWS S3 bucket
     for (index, chunk) in chunks.iter().enumerate() {
         let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
-        let filename = output_dir.join(format!("{index}_{}.bin", Uuid::new_v4().to_string()));
         let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
 
-        write_to_file(&filename.display().to_string(), bytes);
+        let filename = match output_dir {
+            Some(dir) => format!("{dir}/{index}_{}.bin", Uuid::new_v4().to_string()),
+            None => format!("encrypted/{index}_{}.bin", Uuid::new_v4().to_string()),
+        };
 
-        keystore
-            .nonce
-            .insert(filename.display().to_string(), nonce_key);
+        match output_dir {
+            Some(_) => write_to_file(&filename, bytes),
+            None => {
+                aws::write_to_bucket(&filename, bytes).await;
+            }
+        }
+
+        keystore.nonce.insert(filename, nonce_key);
     }
 
-    keystore.write_to_file(&output_dir.join("keystore.json").display().to_string());
+    match output_dir {
+        Some(dir) => keystore.write_to_file(&format!("{dir}/keystore.json")),
+        None => keystore.write_to_file("keystore.json"),
+    }
 }
 
 fn split_text(s: &String, chunk_size: usize) -> Vec<String> {

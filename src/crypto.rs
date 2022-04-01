@@ -1,3 +1,4 @@
+use crate::aws;
 use chacha20poly1305::aead::{Aead, NewAead};
 use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use itertools::Itertools;
@@ -5,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::Path;
 use uuid::Uuid;
 
 /// Contains the main encryption key used for the `ChaCha20Poly1305` cipher
@@ -74,7 +74,7 @@ pub fn decrypt(bytes: &Vec<u8>, cipher: &ChaCha20Poly1305, nonce_key: &str) -> S
     return plaintext;
 }
 
-pub fn decrypt_to_file(keystore_path: &str, output_file: &Option<String>) {
+pub async fn decrypt_to_file(keystore_path: &str, output_file: &Option<String>) {
     let keystore = KeyStore::from_file(keystore_path);
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
@@ -95,6 +95,42 @@ pub fn decrypt_to_file(keystore_path: &str, output_file: &Option<String>) {
             .expect(&format!("Couldn't read {filename}"));
 
         plaintext.push_str(&decrypt(&buffer, &cipher, &nonce_key));
+    }
+
+    let filepath = output_file.as_ref().unwrap_or(&keystore.filepath);
+
+    let mut file = match File::create(&filepath) {
+        Ok(value) => value,
+        Err(why) => panic!("Failed to create output file {why}")
+    };
+
+    match file.write_all(&plaintext.as_bytes()) {
+        Ok(()) => println!("Output saved to {filepath}"),
+        Err(why) => println!("Error saving encrypted file: {why}"),
+    }
+}
+
+pub async fn decrypt_from_bucket(keystore_path: &str, output_file: &Option<String>) {
+    let keystore = KeyStore::from_file(keystore_path);
+    let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
+    let cipher = ChaCha20Poly1305::new(cipher_key);
+    let mut plaintext = String::new();
+
+    let filenames = keystore
+        .nonce
+        .keys()
+        .sorted_by(|a, b| alphanumeric_sort::compare_str(a, b));
+
+    for filename in filenames {
+        println!("Decrypting {}", filename);
+        let nonce_key = keystore.nonce.get(&String::from(filename.clone())).unwrap();
+        let mut file = aws::read_from_bucket(&String::from(filename.clone())).await;
+        // let mut buffer = Vec::new();
+
+        // file.read_to_end(&mut buffer)
+        //     .expect(&format!("Couldn't read {filename}"));
+
+        plaintext.push_str(&decrypt(&file, &cipher, &nonce_key));
     }
 
     let filepath = output_file.as_ref().unwrap_or(&keystore.filepath);
