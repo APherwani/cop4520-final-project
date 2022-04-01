@@ -28,6 +28,9 @@ async fn main() {
             // crypto::decrypt_to_file(&command.keystore_path, &command.output_file).await
             crypto::decrypt_from_bucket(&command.keystore_path, &command.output_file).await
         }
+        Commands::Clear(command) => {
+            aws::clear_directory(&command.dir_name).await
+        }
     }
 }
 
