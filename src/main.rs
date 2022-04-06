@@ -31,6 +31,12 @@ async fn main() {
         Commands::Clear(command) => {
             aws::clear_directory(&command.dir_name).await
         }
+        Commands::List(command) => {
+            let items = aws::list_objects(&command.dir_name).await;
+            for item in items {
+                println!("{}", item)
+            }
+        }
     }
 }
 
