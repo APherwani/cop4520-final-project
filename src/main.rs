@@ -15,6 +15,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use uuid::Uuid;
+use rayon::prelude::*;
 
 #[tokio::main]
 async fn main() {
@@ -25,8 +26,8 @@ async fn main() {
     match &args.command {
         Commands::Encrypt(command) => encrypt(&command).await,
         Commands::Decrypt(command) => {
-            // crypto::decrypt_to_file(&command.keystore_path, &command.output_file).await
-            crypto::decrypt_from_bucket(&command.keystore_path, &command.output_file).await
+            crypto::decrypt_to_file(&command.keystore_path, &command.output_file).await
+            // crypto::decrypt_from_bucket(&command.keystore_path, &command.output_file).await
         }
         Commands::Clear(command) => {
             aws::clear_directory(&command.dir_name).await
@@ -69,37 +70,60 @@ fn read_file(file_path: &String) -> String {
     } = args;
 
     let file_content = read_file(&file_path);
-    let mut keystore = KeyStore::new(file_path.to_string());
+    let keystore = KeyStore::new(file_path.to_string());
 
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
-    let chunks = split_text(&file_content, *chunk_size);
+    let mut chunks = split_text(&file_content, *chunk_size);
 
     match output_dir {
         Some(dir) => std::fs::create_dir_all(dir).expect("Failed to create output directory"),
         None => (),
     }
 
-    // If the output directory is passed, we'll save the chunks to the user's own
-    // computer, otherwise, we'll upload it to the AWS S3 bucket
-    for (index, chunk) in chunks.iter().enumerate() {
+    // 0_something something something
+
+    // // If the output directory is passed, we'll save the chunks to the user's own
+    // // computer, otherwise, we'll upload it to the AWS S3 bucket
+    // for (index, chunk) in chunks.iter().enumerate() {
+    //     let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
+    //     let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
+
+    //     let filename = match output_dir {
+    //         Some(dir) => format!("{dir}/{index}_{}.bin", Uuid::new_v4().to_string()),
+    //         None => format!("encrypted/{index}_{}.bin", Uuid::new_v4().to_string()),
+    //     };
+
+    //     match output_dir {
+    //         Some(_) => write_to_file(&filename, bytes),
+    //         None => {
+    //             aws::write_to_bucket(&filename, bytes).await;
+    //         }
+    //     }
+
+    //     keystore.nonce.insert(filename, nonce_key);
+    // }
+
+    // arr.par_iter_mut().for_each(|p| *p -= 1);
+    chunks.par_iter_mut().enumerate().for_each(|(index, chunk)| {
         let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
         let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
 
         let filename = match output_dir {
             Some(dir) => format!("{dir}/{index}_{}.bin", Uuid::new_v4().to_string()),
-            None => format!("encrypted/{index}_{}.bin", Uuid::new_v4().to_string()),
+            None => format!("encrypted/{}.bin", Uuid::new_v4().to_string()),
         };
 
         match output_dir {
             Some(_) => write_to_file(&filename, bytes),
             None => {
-                aws::write_to_bucket(&filename, bytes).await;
+                // aws::write_to_bucket(&filename, bytes).await;
             }
         }
 
-        keystore.nonce.insert(filename, nonce_key);
-    }
+        // keystore.nonce.insert(filename, nonce_key);
+        println!("\"{}\": {:?}", filename, nonce_key);
+    });
 
     match output_dir {
         Some(dir) => keystore.write_to_file(&format!("{dir}/keystore.json")),
@@ -120,8 +144,8 @@ fn write_to_file(filename: &str, bytes: Vec<u8>) {
     let mut file = File::create(filename).expect(&format!("Failed to open file: {filename}"));
 
     match file.write(&bytes) {
-        Ok(bytes) => println!("{filename} saved => {bytes} bytes"),
-        Err(why) => println!("Error saving encrypted file: {why}"),
+        Ok(bytes) => {},
+        Err(why) => {}
     }
 }
 
