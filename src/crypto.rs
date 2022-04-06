@@ -55,30 +55,30 @@ impl KeyStore {
     }
 }
 
-pub fn encrypt(plaintext: &str, cipher: &ChaCha20Poly1305, nonce_key: &str) -> Vec<u8> {
+pub fn encrypt(bytes: &[u8], cipher: &ChaCha20Poly1305, nonce_key: &str) -> Vec<u8> {
     let nonce = Nonce::from_slice(nonce_key.as_bytes());
-    let ciphertext = cipher
-        .encrypt(nonce, plaintext.as_ref())
-        .expect("Failed to encrypt text");
+    let buffer = cipher
+        .encrypt(nonce, bytes.as_ref())
+        .expect("Failed to encrypt buffer");
 
-    return ciphertext;
+    return buffer;
 }
 
-pub fn decrypt(bytes: &Vec<u8>, cipher: &ChaCha20Poly1305, nonce_key: &str) -> String {
+pub fn decrypt(bytes: &Vec<u8>, cipher: &ChaCha20Poly1305, nonce_key: &str) -> Vec<u8> {
     let nonce = Nonce::from_slice(nonce_key.as_bytes());
-    let plaintext = match cipher.decrypt(nonce, bytes.as_ref()) {
-        Ok(value) => String::from_utf8(value).expect("Couldn't decrypt text from"),
-        Err(why) => panic!("Failed to decrypt text: {why}"),
+    let buffer = match cipher.decrypt(nonce, bytes.as_ref()) {
+        Ok(value) => value,
+        Err(why) => panic!("Failed to decrypt buffer: {why}"),
     };
 
-    return plaintext;
+    return buffer;
 }
 
 pub async fn decrypt_to_file(keystore_path: &str, output_file: &Option<String>) {
     let keystore = KeyStore::from_file(keystore_path);
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
-    let mut plaintext = String::new();
+    let mut chunks: Vec<u8> = Vec::new();
 
     let filenames = keystore
         .nonce
@@ -94,19 +94,21 @@ pub async fn decrypt_to_file(keystore_path: &str, output_file: &Option<String>) 
         file.read_to_end(&mut buffer)
             .expect(&format!("Couldn't read {filename}"));
 
-        plaintext.push_str(&decrypt(&buffer, &cipher, &nonce_key));
+        let mut decrypted_buffer = decrypt(&buffer, &cipher, &nonce_key);
+
+        chunks.append(&mut decrypted_buffer);
     }
 
     let filepath = output_file.as_ref().unwrap_or(&keystore.filepath);
 
     let mut file = match File::create(&filepath) {
         Ok(value) => value,
-        Err(why) => panic!("Failed to create output file {why}")
+        Err(why) => panic!("Failed to create output file {why}"),
     };
 
-    match file.write_all(&plaintext.as_bytes()) {
+    match file.write_all(&chunks) {
         Ok(()) => println!("Output saved to {filepath}"),
-        Err(why) => println!("Error saving encrypted file: {why}"),
+        Err(why) => panic!("Error saving encrypted file: {why}"),
     }
 }
 
@@ -114,7 +116,7 @@ pub async fn decrypt_from_bucket(keystore_path: &str, output_file: &Option<Strin
     let keystore = KeyStore::from_file(keystore_path);
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
-    let mut plaintext = String::new();
+    let mut chunks: Vec<u8> = Vec::new();
 
     let filenames = keystore
         .nonce
@@ -124,24 +126,21 @@ pub async fn decrypt_from_bucket(keystore_path: &str, output_file: &Option<Strin
     for filename in filenames {
         println!("Decrypting {}", filename);
         let nonce_key = keystore.nonce.get(&String::from(filename.clone())).unwrap();
-        let mut file = aws::read_from_bucket(&String::from(filename.clone())).await;
-        // let mut buffer = Vec::new();
+        let content = aws::read_from_bucket(&String::from(filename.clone())).await;
+        let mut decrypted_buffer = decrypt(&content, &cipher, &nonce_key);
 
-        // file.read_to_end(&mut buffer)
-        //     .expect(&format!("Couldn't read {filename}"));
-
-        plaintext.push_str(&decrypt(&file, &cipher, &nonce_key));
+        chunks.append(&mut decrypted_buffer);
     }
 
     let filepath = output_file.as_ref().unwrap_or(&keystore.filepath);
 
     let mut file = match File::create(&filepath) {
         Ok(value) => value,
-        Err(why) => panic!("Failed to create output file {why}")
+        Err(why) => panic!("Failed to create output file {why}"),
     };
 
-    match file.write_all(&plaintext.as_bytes()) {
+    match file.write_all(&chunks) {
         Ok(()) => println!("Output saved to {filepath}"),
-        Err(why) => println!("Error saving encrypted file: {why}"),
+        Err(why) => panic!("Error saving encrypted file: {why}"),
     }
 }
