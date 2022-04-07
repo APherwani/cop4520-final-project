@@ -20,14 +20,19 @@ pub struct KeyStore {
     /// and the value refers to the nonce key used to encrypt the file.
     /// All nonce keys **must** be 24 bytes.
     pub nonce: HashMap<String, String>,
+    /// The name of the folder in S3 where the encrypted files are stored
+    pub s3_folder_name: Option<String>,
+    pub encryption_dir: String,
 }
 
 impl KeyStore {
-    pub fn new(filepath: String) -> Self {
+    pub fn new(filepath: String, encryption_dir: String) -> Self {
         return KeyStore {
             filepath,
+            encryption_dir,
             encryption_key: Uuid::new_v4().to_string()[..32].to_string(),
             nonce: HashMap::new(),
+            s3_folder_name: None
         };
     }
 

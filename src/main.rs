@@ -25,9 +25,9 @@ async fn main() {
         Commands::Encrypt(command) => encrypt(&command).await,
         Commands::Decrypt(command) => {
             if command.use_aws {
-                crypto::decrypt_to_file(&command.keystore_path, &command.output_file).await
-            } else {
                 crypto::decrypt_from_bucket(&command.keystore_path, &command.output_file).await
+            } else {
+                crypto::decrypt_to_file(&command.keystore_path, &command.output_file).await
             }
         }
         Commands::Clear(command) => aws::clear_directory(&command.dir_name).await,
@@ -64,18 +64,23 @@ async fn encrypt(args: &EncryptCommand) {
         file_path,
         chunk_size,
         output_dir,
+        use_aws,
     } = args;
 
+    let dir = match output_dir {
+        Some(dir) => dir.clone(),
+        None => Uuid::new_v4().to_string(),
+    };
+
     let file_content = read_file(&file_path);
-    let mut keystore = KeyStore::new(file_path.to_string());
+    let mut keystore = KeyStore::new(file_path.to_string(), dir.to_string());
 
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
     let chunks = file_content.chunks(*chunk_size);
 
-    match output_dir {
-        Some(dir) => std::fs::create_dir_all(dir).expect("Failed to create output directory"),
-        None => (),
+    if !*use_aws && !Path::new(&dir).exists() {
+        std::fs::create_dir_all(&dir).expect("Failed to create output directory");
     }
 
     // If the output directory is passed, we'll save the chunks to the user's own
@@ -84,25 +89,18 @@ async fn encrypt(args: &EncryptCommand) {
         let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
         let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
 
-        let filename = match output_dir {
-            Some(dir) => format!("{dir}/{index}_{}.bin", Uuid::new_v4().to_string()),
-            None => format!("encrypted/{index}_{}.bin", Uuid::new_v4().to_string()),
-        };
+        let filename = format!("{dir}/{index}_{}.bin", Uuid::new_v4().to_string());
 
-        match output_dir {
-            Some(_) => write_to_file(&filename, bytes),
-            None => {
-                aws::write_to_bucket(&filename, bytes).await;
-            }
+        if *use_aws {
+            aws::write_to_bucket(&filename, bytes).await;
+        } else {
+            write_to_file(&filename, bytes);
         }
 
         keystore.nonce.insert(filename, nonce_key);
     }
 
-    match output_dir {
-        Some(dir) => keystore.write_to_file(&format!("{dir}/keystore.json")),
-        None => keystore.write_to_file("keystore.json"),
-    }
+    keystore.write_to_file(&format!("keystore-{dir}.json"));
 }
 
 fn write_to_file(filename: &str, bytes: Vec<u8>) {
