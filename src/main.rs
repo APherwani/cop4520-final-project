@@ -24,12 +24,13 @@ async fn main() {
     match &args.command {
         Commands::Encrypt(command) => encrypt(&command).await,
         Commands::Decrypt(command) => {
-            crypto::decrypt_to_file(&command.keystore_path, &command.output_file).await
-            // crypto::decrypt_from_bucket(&command.keystore_path, &command.output_file).await
+            if command.use_aws {
+                crypto::decrypt_to_file(&command.keystore_path, &command.output_file).await
+            } else {
+                crypto::decrypt_from_bucket(&command.keystore_path, &command.output_file).await
+            }
         }
-        Commands::Clear(command) => {
-            aws::clear_directory(&command.dir_name).await
-        }
+        Commands::Clear(command) => aws::clear_directory(&command.dir_name).await,
         Commands::List(command) => {
             let items = aws::list_objects(&command.dir_name).await;
             for item in items {
@@ -52,12 +53,13 @@ fn read_file(file_path: &String) -> Vec<u8> {
 
     // Read the file contents into a vector, returns `io::Result<usize>`
     let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer).expect(&format!("Couldn't read {display}"));
+    file.read_to_end(&mut buffer)
+        .expect(&format!("Couldn't read {display}"));
 
     return buffer;
 }
 
- async fn encrypt(args: &EncryptCommand) {
+async fn encrypt(args: &EncryptCommand) {
     let EncryptCommand {
         file_path,
         chunk_size,

@@ -44,6 +44,11 @@ pub struct DecryptCommand {
     /// keystore will be used instead.
     #[clap(short, long = "output", value_name = "OUTPUT FILE",)]
     pub output_file: Option<String>,
+
+    #[clap(long = "aws")]
+    /// (Optional) If passed, this will pull from the AWS S3 bucket to decrypt, otherwise
+    /// it'll use the encrypted files stored on your system (default false).
+    pub use_aws: bool,
 }
 
 /// Clear a directory in the bucket.
