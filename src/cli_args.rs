@@ -54,6 +54,12 @@ pub struct DecryptCommand {
     /// (Optional) If passed, this will pull from the AWS S3 bucket to decrypt, otherwise
     /// it'll use the encrypted files stored on your system (default false).
     pub use_aws: bool,
+
+    #[clap(short, long = "delete")]
+    /// (Optional) [WARNING: Potentially dangerous] If passed, the encrypted files
+    /// (along with the directory they're contained in) will be removed after all
+    /// files have been decrypted
+    pub delete_dir: bool,
 }
 
 /// Clear a directory in the bucket.
