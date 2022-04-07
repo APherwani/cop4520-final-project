@@ -11,6 +11,8 @@ pub struct CLIArgs {
 pub enum Commands {
     Encrypt(EncryptCommand),
     Decrypt(DecryptCommand),
+    Clear(ClearDirectoryInBucketCommand),
+    List(ListFilesInDirectoryInBucketCommand)
 }
 
 /// Encrypt a file
@@ -42,4 +44,20 @@ pub struct DecryptCommand {
     /// keystore will be used instead.
     #[clap(short, long = "output", value_name = "OUTPUT FILE",)]
     pub output_file: Option<String>,
+}
+
+/// Clear a directory in the bucket.
+#[derive(Args, Debug)]
+pub struct ClearDirectoryInBucketCommand {
+    /// Directory name.
+    #[clap(short = 'd', long = "dir", value_name = "DIRECTORY TO CLEAR")]
+    pub dir_name: String,
+}
+
+/// List all files in a directory in the bucket.
+#[derive(Args, Debug)]
+pub struct ListFilesInDirectoryInBucketCommand {
+    /// Directory name.
+    #[clap(short = 'd', long = "dir", value_name = "DIRECTORY TO LIST")]
+    pub dir_name: String,
 }
