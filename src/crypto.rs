@@ -1,11 +1,10 @@
 use crate::aws;
-use crate::cli_args::DecryptCommand;
 use chacha20poly1305::aead::{Aead, NewAead};
 use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::prelude::*;
 use uuid::Uuid;
 
@@ -21,18 +20,15 @@ pub struct KeyStore {
     /// and the value refers to the nonce key used to encrypt the file.
     /// All nonce keys **must** be 24 bytes.
     pub nonce: HashMap<String, String>,
-    /// The name of the directory where the encrypted files are stored
-    pub encryption_dir: String,
 }
 
 impl KeyStore {
-    pub fn new(filepath: String, encryption_dir: String) -> Self {
-        KeyStore {
+    pub fn new(filepath: String) -> Self {
+        return KeyStore {
             filepath,
-            encryption_dir,
             encryption_key: Uuid::new_v4().to_string()[..32].to_string(),
             nonce: HashMap::new(),
-        }
+        };
     }
 
     /// Takes a path to a keystore JSON file and creates a KeyStore
@@ -53,112 +49,99 @@ impl KeyStore {
         let mut keystore_file = File::create(path).expect("Failed to create keystore file");
 
         match keystore_file.write_all(&key_json.to_string().as_bytes()) {
-            Ok(_) => println!("Keystore saved to {path}"),
+            Ok(_) => println!("Keystore saved to: {path}"),
             Err(why) => println!("Error saving {path}: {why}"),
         }
     }
 }
 
-pub fn encrypt(bytes: &[u8], cipher: &ChaCha20Poly1305, nonce_key: &str) -> Vec<u8> {
+pub fn encrypt(plaintext: &str, cipher: &ChaCha20Poly1305, nonce_key: &str) -> Vec<u8> {
     let nonce = Nonce::from_slice(nonce_key.as_bytes());
-    let buffer = cipher
-        .encrypt(nonce, bytes.as_ref())
-        .expect("Failed to encrypt buffer");
+    let ciphertext = cipher
+        .encrypt(nonce, plaintext.as_ref())
+        .expect("Failed to encrypt text");
 
-    return buffer;
+    return ciphertext;
 }
 
-pub fn decrypt(bytes: &Vec<u8>, cipher: &ChaCha20Poly1305, nonce_key: &str) -> Vec<u8> {
+pub fn decrypt(bytes: &Vec<u8>, cipher: &ChaCha20Poly1305, nonce_key: &str) -> String {
     let nonce = Nonce::from_slice(nonce_key.as_bytes());
-    let buffer = match cipher.decrypt(nonce, bytes.as_ref()) {
-        Ok(value) => value,
-        Err(why) => panic!("Failed to decrypt buffer: {why}"),
+    let plaintext = match cipher.decrypt(nonce, bytes.as_ref()) {
+        Ok(value) => String::from_utf8(value).expect("Couldn't decrypt text from"),
+        Err(why) => panic!("Failed to decrypt text: {why}"),
     };
 
-    return buffer;
+    return plaintext;
 }
 
-pub async fn decrypt_to_file(args: &DecryptCommand) {
-    let DecryptCommand {
-        keystore_path,
-        output_file,
-        delete_dir,
-        use_aws,
-    } = args;
-
+pub async fn decrypt_to_file(keystore_path: &str, output_file: &Option<String>) {
     let keystore = KeyStore::from_file(keystore_path);
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
-    let mut chunks: Vec<u8> = Vec::new();
+    let mut plaintext = String::new();
 
     let filenames = keystore
         .nonce
         .keys()
         .sorted_by(|a, b| alphanumeric_sort::compare_str(a, b));
 
-    let filepath = output_file.as_ref().unwrap_or(&keystore.filepath);
-
-    // Create the file for writing. If the file already exists, this
-    // will throw an error
-    let mut file = match OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(filepath)
-    {
-        Ok(value) => value,
-        Err(why) => panic!("Failed to create {filepath}: {why}"),
-    };
-
     for filename in filenames {
         println!("Decrypting {}", filename);
         let nonce_key = keystore.nonce.get(filename).unwrap();
+        let mut file = File::open(&filename).expect(&format!("Couldn't open {filename}"));
+        let mut buffer = Vec::new();
 
-        // If we're decrypting from the S3 bucket, we'll read the contents of the file
-        // from the bucket into a u8 vector, otherwise, we'll read contents of
-        // the file on the user's local system into a u8 vector
-        let encrypted_content = if *use_aws {
-            aws::read_from_bucket(&String::from(filename.clone())).await
-        } else {
-            let mut file = File::open(&filename).expect(&format!("Couldn't open {filename}"));
-            let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer)
+            .expect(&format!("Couldn't read {filename}"));
 
-            file.read_to_end(&mut buffer)
-                .expect(&format!("Couldn't read {filename}"));
-
-            buffer
-        };
-
-        let mut decrypted_buffer = decrypt(&encrypted_content, &cipher, &nonce_key);
-        chunks.append(&mut decrypted_buffer);
+        plaintext.push_str(&decrypt(&buffer, &cipher, &nonce_key));
     }
 
-    // If the --delete option was passed, we'll delete the keystore file
-    // and remove the encrypted files from either the user's system or
-    // the S3 bucket
-    if *delete_dir {
-        match std::fs::remove_file(&keystore_path) {
-            Ok(()) => println!("Removed {}", &keystore_path),
-            Err(why) => panic!("Failed to remove {}: {why}", &keystore.encryption_dir),
-        }
+    let filepath = output_file.as_ref().unwrap_or(&keystore.filepath);
 
-        if *use_aws {
-            println!("Removing AWS directory...");
-            aws::clear_directory(&format!("{}/", &keystore.encryption_dir)).await;
-        } else {
-            match std::fs::remove_dir_all(&keystore.encryption_dir) {
-                Ok(()) => (),
-                Err(why) => panic!(
-                    "Failed to remove directory {}: {why}",
-                    &keystore.encryption_dir
-                ),
-            }
-        }
+    let mut file = match File::create(&filepath) {
+        Ok(value) => value,
+        Err(why) => panic!("Failed to create output file {why}")
+    };
 
-        println!("Removed directory {}", &keystore.encryption_dir);
-    }
-
-    match file.write_all(&chunks) {
+    match file.write_all(&plaintext.as_bytes()) {
         Ok(()) => println!("Output saved to {filepath}"),
-        Err(why) => panic!("Error saving encrypted file: {why}"),
+        Err(why) => println!("Error saving encrypted file: {why}"),
+    }
+}
+
+pub async fn decrypt_from_bucket(keystore_path: &str, output_file: &Option<String>) {
+    let keystore = KeyStore::from_file(keystore_path);
+    let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
+    let cipher = ChaCha20Poly1305::new(cipher_key);
+    let mut plaintext = String::new();
+
+    let filenames = keystore
+        .nonce
+        .keys()
+        .sorted_by(|a, b| alphanumeric_sort::compare_str(a, b));
+
+    for filename in filenames {
+        println!("Decrypting {}", filename);
+        let nonce_key = keystore.nonce.get(&String::from(filename.clone())).unwrap();
+        let mut file = aws::read_from_bucket(&String::from(filename.clone())).await;
+        // let mut buffer = Vec::new();
+
+        // file.read_to_end(&mut buffer)
+        //     .expect(&format!("Couldn't read {filename}"));
+
+        plaintext.push_str(&decrypt(&file, &cipher, &nonce_key));
+    }
+
+    let filepath = output_file.as_ref().unwrap_or(&keystore.filepath);
+
+    let mut file = match File::create(&filepath) {
+        Ok(value) => value,
+        Err(why) => panic!("Failed to create output file {why}")
+    };
+
+    match file.write_all(&plaintext.as_bytes()) {
+        Ok(()) => println!("Output saved to {filepath}"),
+        Err(why) => println!("Error saving encrypted file: {why}"),
     }
 }

@@ -10,6 +10,7 @@ use clap::Parser;
 use cli_args::{CLIArgs, Commands, EncryptCommand};
 use crypto::KeyStore;
 use dotenv::dotenv;
+use itertools::Itertools;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -25,16 +26,23 @@ async fn main() {
 
     match &args.command {
         Commands::Encrypt(command) => encrypt(&command).await,
-        Commands::Decrypt(command) => crypto::decrypt_to_file(&command).await,
-        Commands::Clear(command) => aws::clear_directory(&command.dir_name).await,
+        Commands::Decrypt(command) => {
+            // crypto::decrypt_to_file(&command.keystore_path, &command.output_file).await
+            crypto::decrypt_from_bucket(&command.keystore_path, &command.output_file).await
+        }
+        Commands::Clear(command) => {
+            aws::clear_directory(&command.dir_name).await
+        }
         Commands::List(command) => {
             let items = aws::list_objects(&command.dir_name).await;
-            items.iter().for_each(|item| println!("{item}"));
+            for item in items {
+                println!("{}", item)
+            }
         }
     }
 }
 
-fn read_file(file_path: &String) -> Vec<u8> {
+fn read_file(file_path: &String) -> String {
     // Create a path to the desired file
     let path = Path::new(file_path);
     let display = path.display();
@@ -45,67 +53,70 @@ fn read_file(file_path: &String) -> Vec<u8> {
         Ok(file) => file,
     };
 
-    // Read the file contents into a vector, returns `io::Result<usize>`
-    let mut buffer = Vec::new();
+    // Read the file contents into a string, returns `io::Result<usize>`
+    let mut s = String::new();
+    match file.read_to_string(&mut s) {
+        Err(why) => panic!("couldn't read {}: {}", display, why),
+        Ok(_) => println!("Read new file containing {} characters.", s.len()),
+    }
 
-    file.read_to_end(&mut buffer)
-        .expect(&format!("Couldn't read {display}"));
-
-    return buffer;
+    return s;
 }
 
-async fn encrypt(args: &EncryptCommand) {
+ async fn encrypt(args: &EncryptCommand) {
     let EncryptCommand {
         file_path,
         chunk_size,
         output_dir,
-        use_aws,
     } = args;
 
-    let output_dir = match output_dir {
-        Some(dir) => dir.clone(),
-        None => Uuid::new_v4().to_string(),
-    };
+    let file_content = read_file(&file_path);
+    let mut keystore = KeyStore::new(file_path.to_string());
 
-    let mut keystore = KeyStore::new(file_path.to_string(), output_dir.to_string());
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
-    let file_content = read_file(&file_path);
-    let chunks = file_content.chunks(*chunk_size);
+    let chunks = split_text(&file_content, *chunk_size);
 
-    if !*use_aws {
-        match std::fs::create_dir(&output_dir) {
-            Ok(()) => (),
-            Err(why) => panic!("Failed to create {output_dir}: {why}"),
-        }
+    match output_dir {
+        Some(dir) => std::fs::create_dir_all(dir).expect("Failed to create output directory"),
+        None => (),
     }
 
     let something = chunks.par_iter().enumerate().map(|(index, chunk)| {
         let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
         let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
-        let filename = format!("{output_dir}/{index}_{}.bin", Uuid::new_v4().to_string());
 
-        if !*use_aws {
-          write_to_file(&filename, bytes);
-          return (nonce_key, filename)
-        } else {
-          return (nonce_key, filename, bytes);          
-        }
+        let filename = match output_dir {
+            Some(dir) => format!("{dir}/{index}_{}.bin", Uuid::new_v4().to_string()),
+            None => format!("encrypted/{index}_{}.bin", Uuid::new_v4().to_string()),
+        };
+
+        return (nonce_key, filename, bytes);
     }).collect::<Vec<_>>();
-    
-    if *use_aws {
 
-      for (nonce_key, filename, bytes) in &something {
-          keystore.nonce.insert(filename.clone(), nonce_key.clone());
-      }
-
-      let mut stream = tokio_stream::iter(something);
-      
-      while let Some((nonce_key, filename, bytes)) = stream.next().await {
-        aws::write_to_bucket(&filename, bytes).await;
-      }
-      
+    for (nonce_key, filename, bytes) in &something {
+        keystore.nonce.insert(filename.clone(), nonce_key.clone());
     }
+
+    let mut stream = tokio_stream::iter(something);
+
+    while let Some((nonce_key, filename, bytes)) = stream.next().await {
+        aws::write_to_bucket(&filename, bytes).await;
+    }
+
+    match output_dir {
+        Some(dir) => keystore.write_to_file(&format!("{dir}/keystore.json")),
+        None => keystore.write_to_file("keystore.json"),
+    }
+}
+
+fn split_text(s: &String, chunk_size: usize) -> Vec<String> {
+    return s
+        .chars()
+        .chunks(chunk_size)
+        .into_iter()
+        .map(|chunk| chunk.collect::<String>())
+        .collect::<Vec<String>>();
 }
 
 fn write_to_file(filename: &str, bytes: Vec<u8>) {
@@ -117,21 +128,20 @@ fn write_to_file(filename: &str, bytes: Vec<u8>) {
     }
 }
 
-// TODO: Fix this somehow
-// #[test]
-// fn test_encrypt_and_decrypt() {
-//     let test_string = "The fox jumped over the fence.";
+#[test]
+fn test_encrypt_and_decrypt() {
+    let test_string = "The fox jumped over the fence.";
 
-//     let keystore = KeyStore::new(String::from("file.test"));
+    let keystore = KeyStore::new(String::from("file.test"));
 
-//     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
-//     let cipher = ChaCha20Poly1305::new(cipher_key);
+    let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
+    let cipher = ChaCha20Poly1305::new(cipher_key);
 
-//     let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
+    let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
 
-//     let bytes = crypto::encrypt(&test_string, &cipher, nonce_key.as_ref());
+    let bytes = crypto::encrypt(&test_string, &cipher, nonce_key.as_ref());
 
-//     let decrypted_string = crypto::decrypt(&bytes, &cipher, nonce_key.as_ref());
+    let decrypted_string = crypto::decrypt(&bytes, &cipher, nonce_key.as_ref());
 
-//     assert_eq!(test_string, decrypted_string);
-// }
+    assert_eq!(test_string, decrypted_string);
+}
