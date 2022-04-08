@@ -90,43 +90,11 @@ fn read_file(file_path: &String) -> String {
             None => format!("encrypted/{}.bin", Uuid::new_v4().to_string()),
         };
 
-        let filename_clone = filename.clone();
-
-        // match output_dir {
-        //     Some(_) => write_to_file(&filename, bytes),
-        //     None => {
-        //         // TODO: this does not work, I think a potential solution is to
-        //         // write these files to a local directory, and then after exiting
-        //         // this loop, spawn a tokio runtime that will write local files to bucket
-        //         // and clean up the remaining artifacts.
-
-        //         tokio::spawn(async move {
-        //             aws::write_to_bucket(&filename, bytes).await;
-        //         });
-        //     }
-        // }
-
-        // this is bad don't do it
-        tokio::spawn(async move {
-            aws::write_to_bucket(&filename, bytes).await;
-        });
-
-        // TODO: this does not work either. This is because rust does not allow
-        //  multiple threads writing to the same file, and using locks here 
-        // is not a solution. It will cause a deadlock in the rayon runtime as
-        // referred [here](https://github.com/rayon-rs/rayon/issues/592).
-
-        // The solution I am trying here is to return a key value pair that
-        // contains the filename and the nonce key.
-
-        // keystore.nonce.insert(filename, nonce_key);
-        return (filename_clone, nonce_key);
-        // return_something()
+        return (index, filename, bytes);
     }).collect::<Vec<_>>();
 
-    println!("{:?}", something);
-    for (filename, nonce_key) in something {
-        keystore.nonce.insert(filename, nonce_key);
+    for (index, filename, bytes) in something {
+        aws::write_to_bucket(&filename, bytes).await;
     }
 
     match output_dir {
