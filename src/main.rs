@@ -90,10 +90,12 @@ fn read_file(file_path: &String) -> String {
             None => format!("encrypted/{}.bin", Uuid::new_v4().to_string()),
         };
 
-        return (index, filename, bytes);
+        return (nonce_key, filename, bytes);
     }).collect::<Vec<_>>();
 
-    for (index, filename, bytes) in something {
+    let mut stream = tokio_stream::iter(something);
+
+    while let Some((nonce_key, filename, bytes)) = stream.next().await {
         aws::write_to_bucket(&filename, bytes).await;
     }
 
