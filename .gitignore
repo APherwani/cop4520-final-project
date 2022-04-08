@@ -20,3 +20,4 @@ encrypted/
 decrypted/
 .DS_Store
 .env
+keystore-*.json
