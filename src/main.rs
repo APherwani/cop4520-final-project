@@ -70,42 +70,18 @@ fn read_file(file_path: &String) -> String {
     } = args;
 
     let file_content = read_file(&file_path);
-    let keystore = KeyStore::new(file_path.to_string());
+    let mut keystore = KeyStore::new(file_path.to_string());
 
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
-    let mut chunks = split_text(&file_content, *chunk_size);
+    let chunks = split_text(&file_content, *chunk_size);
 
     match output_dir {
         Some(dir) => std::fs::create_dir_all(dir).expect("Failed to create output directory"),
         None => (),
     }
 
-    // 0_something something something
-
-    // // If the output directory is passed, we'll save the chunks to the user's own
-    // // computer, otherwise, we'll upload it to the AWS S3 bucket
-    // for (index, chunk) in chunks.iter().enumerate() {
-    //     let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
-    //     let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
-
-    //     let filename = match output_dir {
-    //         Some(dir) => format!("{dir}/{index}_{}.bin", Uuid::new_v4().to_string()),
-    //         None => format!("encrypted/{index}_{}.bin", Uuid::new_v4().to_string()),
-    //     };
-
-    //     match output_dir {
-    //         Some(_) => write_to_file(&filename, bytes),
-    //         None => {
-    //             aws::write_to_bucket(&filename, bytes).await;
-    //         }
-    //     }
-
-    //     keystore.nonce.insert(filename, nonce_key);
-    // }
-
-    // arr.par_iter_mut().for_each(|p| *p -= 1);
-    chunks.par_iter_mut().enumerate().for_each(|(index, chunk)| {
+    let something = chunks.par_iter().enumerate().map(|(index, chunk)| {
         let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
         let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
 
@@ -114,16 +90,44 @@ fn read_file(file_path: &String) -> String {
             None => format!("encrypted/{}.bin", Uuid::new_v4().to_string()),
         };
 
-        match output_dir {
-            Some(_) => write_to_file(&filename, bytes),
-            None => {
-                // aws::write_to_bucket(&filename, bytes).await;
-            }
-        }
+        let filename_clone = filename.clone();
+
+        // match output_dir {
+        //     Some(_) => write_to_file(&filename, bytes),
+        //     None => {
+        //         // TODO: this does not work, I think a potential solution is to
+        //         // write these files to a local directory, and then after exiting
+        //         // this loop, spawn a tokio runtime that will write local files to bucket
+        //         // and clean up the remaining artifacts.
+
+        //         tokio::spawn(async move {
+        //             aws::write_to_bucket(&filename, bytes).await;
+        //         });
+        //     }
+        // }
+
+        // this is bad don't do it
+        tokio::spawn(async move {
+            aws::write_to_bucket(&filename, bytes).await;
+        });
+
+        // TODO: this does not work either. This is because rust does not allow
+        //  multiple threads writing to the same file, and using locks here 
+        // is not a solution. It will cause a deadlock in the rayon runtime as
+        // referred [here](https://github.com/rayon-rs/rayon/issues/592).
+
+        // The solution I am trying here is to return a key value pair that
+        // contains the filename and the nonce key.
 
         // keystore.nonce.insert(filename, nonce_key);
-        println!("\"{}\": {:?}", filename, nonce_key);
-    });
+        return (filename_clone, nonce_key);
+        // return_something()
+    }).collect::<Vec<_>>();
+
+    println!("{:?}", something);
+    for (filename, nonce_key) in something {
+        keystore.nonce.insert(filename, nonce_key);
+    }
 
     match output_dir {
         Some(dir) => keystore.write_to_file(&format!("{dir}/keystore.json")),
