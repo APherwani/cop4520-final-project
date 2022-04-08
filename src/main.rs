@@ -15,6 +15,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
 use uuid::Uuid;
+use rayon::prelude::*;
+use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() {
@@ -80,9 +82,7 @@ fn read_file(file_path: &String) -> String {
         None => (),
     }
 
-    // If the output directory is passed, we'll save the chunks to the user's own
-    // computer, otherwise, we'll upload it to the AWS S3 bucket
-    for (index, chunk) in chunks.iter().enumerate() {
+    let something = chunks.par_iter().enumerate().map(|(index, chunk)| {
         let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
         let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
 
@@ -91,14 +91,17 @@ fn read_file(file_path: &String) -> String {
             None => format!("encrypted/{index}_{}.bin", Uuid::new_v4().to_string()),
         };
 
-        match output_dir {
-            Some(_) => write_to_file(&filename, bytes),
-            None => {
-                aws::write_to_bucket(&filename, bytes).await;
-            }
-        }
+        return (nonce_key, filename, bytes);
+    }).collect::<Vec<_>>();
 
-        keystore.nonce.insert(filename, nonce_key);
+    for (nonce_key, filename, bytes) in &something {
+        keystore.nonce.insert(filename.clone(), nonce_key.clone());
+    }
+
+    let mut stream = tokio_stream::iter(something);
+
+    while let Some((nonce_key, filename, bytes)) = stream.next().await {
+        aws::write_to_bucket(&filename, bytes).await;
     }
 
     match output_dir {
@@ -120,8 +123,8 @@ fn write_to_file(filename: &str, bytes: Vec<u8>) {
     let mut file = File::create(filename).expect(&format!("Failed to open file: {filename}"));
 
     match file.write(&bytes) {
-        Ok(bytes) => println!("{filename} saved => {bytes} bytes"),
-        Err(why) => println!("Error saving encrypted file: {why}"),
+        Ok(bytes) => {},
+        Err(why) => {}
     }
 }
 
