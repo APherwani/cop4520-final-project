@@ -16,6 +16,7 @@ use std::io::prelude::*;
 use std::path::Path;
 use uuid::Uuid;
 use rayon::prelude::*;
+use tokio_stream::StreamExt;
 
 #[tokio::main]
 async fn main() {
@@ -26,8 +27,8 @@ async fn main() {
     match &args.command {
         Commands::Encrypt(command) => encrypt(&command).await,
         Commands::Decrypt(command) => {
-            crypto::decrypt_to_file(&command.keystore_path, &command.output_file).await
-            // crypto::decrypt_from_bucket(&command.keystore_path, &command.output_file).await
+            // crypto::decrypt_to_file(&command.keystore_path, &command.output_file).await
+            crypto::decrypt_from_bucket(&command.keystore_path, &command.output_file).await
         }
         Commands::Clear(command) => {
             aws::clear_directory(&command.dir_name).await
@@ -87,11 +88,15 @@ fn read_file(file_path: &String) -> String {
 
         let filename = match output_dir {
             Some(dir) => format!("{dir}/{index}_{}.bin", Uuid::new_v4().to_string()),
-            None => format!("encrypted/{}.bin", Uuid::new_v4().to_string()),
+            None => format!("encrypted/{index}_{}.bin", Uuid::new_v4().to_string()),
         };
 
         return (nonce_key, filename, bytes);
     }).collect::<Vec<_>>();
+
+    for (nonce_key, filename, bytes) in &something {
+        keystore.nonce.insert(filename.clone(), nonce_key.clone());
+    }
 
     let mut stream = tokio_stream::iter(something);
 
