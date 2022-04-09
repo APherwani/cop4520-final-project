@@ -26,11 +26,16 @@ pub struct EncryptCommand {
     #[clap(short, long)]
     pub chunk_size: usize,
 
-    /// The directory where each chunk (along with the encryption key)
+    /// (Optional) The directory where each chunk (along with the encryption key)
     /// should be saved. The directory will be created if it doesn't
-    /// already exist
+    /// already exist. If no value is passed, a random directory will be created.
     #[clap(short, long = "output", value_name = "OUTPUT DIRECTORY")]
     pub output_dir: Option<String>,
+
+    #[clap(long = "aws")]
+    /// (Optional) If passed, this will upload encrypted files to an AWS S3 bucket,
+    /// otherwise, files will be stored locally on your system
+    pub use_aws: bool,
 }
 
 /// Decrypt a file using a given keystore file
@@ -44,6 +49,17 @@ pub struct DecryptCommand {
     /// keystore will be used instead.
     #[clap(short, long = "output", value_name = "OUTPUT FILE",)]
     pub output_file: Option<String>,
+
+    #[clap(long = "aws")]
+    /// (Optional) If passed, this will pull from the AWS S3 bucket to decrypt, otherwise
+    /// it'll use the encrypted files stored on your system (default false).
+    pub use_aws: bool,
+
+    #[clap(short, long = "delete")]
+    /// (Optional) [WARNING: Potentially dangerous] If passed, the encrypted files
+    /// (along with the directory they're contained in) will be removed after all
+    /// files have been decrypted
+    pub delete_dir: bool,
 }
 
 /// Clear a directory in the bucket.
