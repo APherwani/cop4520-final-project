@@ -96,11 +96,11 @@ async fn encrypt(args: &EncryptCommand) {
         })
         .collect::<Vec<_>>();
 
-    if *use_aws {
-        for (nonce_key, filename, _) in &something {
-            keystore.nonce.insert(filename.clone(), nonce_key.clone());
-        }
+    for (nonce_key, filename, _) in &something {
+        keystore.nonce.insert(filename.clone(), nonce_key.clone());
+    }
 
+    if *use_aws {
         let mut stream = tokio_stream::iter(something);
 
         while let Some((_, filename, bytes)) = stream.next().await {
