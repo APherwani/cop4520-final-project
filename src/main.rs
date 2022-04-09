@@ -10,12 +10,12 @@ use clap::Parser;
 use cli_args::{CLIArgs, Commands, EncryptCommand};
 use crypto::KeyStore;
 use dotenv::dotenv;
+use rayon::prelude::*;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use uuid::Uuid;
-use rayon::prelude::*;
 use tokio_stream::StreamExt;
+use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
@@ -71,7 +71,7 @@ async fn encrypt(args: &EncryptCommand) {
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
     let file_content = read_file(&file_path);
-    let chunks = file_content.chunks(*chunk_size);
+    let chunks = file_content.par_chunks(*chunk_size);
 
     if !*use_aws {
         match std::fs::create_dir(&output_dir) {
@@ -80,39 +80,42 @@ async fn encrypt(args: &EncryptCommand) {
         }
     }
 
-    let something = chunks.par_iter().enumerate().map(|(index, chunk)| {
-        let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
-        let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
-        let filename = format!("{output_dir}/{index}_{}.bin", Uuid::new_v4().to_string());
+    let something = chunks
+        .into_par_iter()
+        .enumerate()
+        .map(|(index, chunk)| {
+            let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
+            let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
+            let filename = format!("{output_dir}/{index}_{}.bin", Uuid::new_v4().to_string());
 
-        if !*use_aws {
-          write_to_file(&filename, bytes);
-          return (nonce_key, filename)
-        } else {
-          return (nonce_key, filename, bytes);          
-        }
-    }).collect::<Vec<_>>();
-    
+            if !*use_aws {
+                write_to_file(&filename, &bytes);
+            }
+
+            return (nonce_key, filename, bytes);
+        })
+        .collect::<Vec<_>>();
+
     if *use_aws {
+        for (nonce_key, filename, _) in &something {
+            keystore.nonce.insert(filename.clone(), nonce_key.clone());
+        }
 
-      for (nonce_key, filename, bytes) in &something {
-          keystore.nonce.insert(filename.clone(), nonce_key.clone());
-      }
+        let mut stream = tokio_stream::iter(something);
 
-      let mut stream = tokio_stream::iter(something);
-      
-      while let Some((nonce_key, filename, bytes)) = stream.next().await {
-        aws::write_to_bucket(&filename, bytes).await;
-      }
-      
+        while let Some((_, filename, bytes)) = stream.next().await {
+            aws::write_to_bucket(&filename, bytes).await;
+        }
     }
+
+    keystore.write_to_file(&format!("keystore-{output_dir}.json"));
 }
 
-fn write_to_file(filename: &str, bytes: Vec<u8>) {
+fn write_to_file(filename: &str, bytes: &Vec<u8>) {
     let mut file = File::create(filename).expect(&format!("Failed to open file: {filename}"));
 
-    match file.write(&bytes) {
-        Ok(bytes) => {},
+    match file.write(bytes) {
+        Ok(bytes) => {}
         Err(why) => {}
     }
 }
