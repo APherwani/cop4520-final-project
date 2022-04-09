@@ -77,7 +77,7 @@ fn read_file(file_path: &String) -> String {
     let file_content = read_file(&file_path);
     let chunks = file_content.par_chunks(*chunk_size);
 
-    match output_dir {
+    let output_dir = match output_dir {
         Some(dir) => std::fs::create_dir_all(dir).expect("Failed to create output directory"),
         None => (),
     }
