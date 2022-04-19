@@ -10,11 +10,11 @@ use clap::Parser;
 use cli_args::{CLIArgs, Commands, EncryptCommand};
 use crypto::KeyStore;
 use dotenv::dotenv;
+use futures::StreamExt;
 use rayon::prelude::*;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use tokio_stream::StreamExt;
 use uuid::Uuid;
 
 #[tokio::main]
@@ -101,11 +101,22 @@ async fn encrypt(args: &EncryptCommand) {
     }
 
     if *use_aws {
-        let mut stream = tokio_stream::iter(something);
+        // let mut stream = tokio_stream::iter(something);
 
-        while let Some((_, filename, bytes)) = stream.next().await {
-            aws::write_to_bucket(&filename, bytes).await;
-        }
+        // while let Some((_, filename, bytes)) = stream.next().await {
+        //     aws::write_to_bucket(&filename, bytes).await;
+        // }
+        let funcs = something
+            .into_iter()
+            .map(|(_, filename, bytes)| async move {
+                aws::write_to_bucket(&filename, bytes).await;
+            });
+
+        let bodies = futures::stream::iter(funcs).buffer_unordered(50);
+
+        bodies
+            .for_each(|_| async {})
+            .await;
     }
 
     keystore.write_to_file(&format!("keystore-{output_dir}.json"));
