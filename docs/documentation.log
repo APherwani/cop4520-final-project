@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2021) (preloaded format=pdflatex 2021.7.12)  25 MAR 2022 21:18
+This is pdfTeX, Version 3.141592653-2.6-1.40.22 (TeX Live 2021) (preloaded format=pdflatex 2021.7.12)  28 APR 2022 18:48
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -295,42 +295,66 @@ File: listings.cfg 2020/03/24 1.8d listings configuration
 ))
 Package: listings 2020/03/24 1.8d (Carsten Heinz)
 
+(/usr/local/texlive/2021/texmf-dist/tex/latex/booktabs/booktabs.sty
+Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
+\heavyrulewidth=\dimen177
+\lightrulewidth=\dimen178
+\cmidrulewidth=\dimen179
+\belowrulesep=\dimen180
+\belowbottomsep=\dimen181
+\aboverulesep=\dimen182
+\abovetopsep=\dimen183
+\cmidrulesep=\dimen184
+\cmidrulekern=\dimen185
+\defaultaddspace=\dimen186
+\@cmidla=\count289
+\@cmidlb=\count290
+\@aboverulesep=\dimen187
+\@belowrulesep=\dimen188
+\@thisruleclass=\count291
+\@lastruleclass=\count292
+\@thisrulewidth=\dimen189
+)
 (/usr/local/texlive/2021/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 File: l3backend-pdftex.def 2021-03-18 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count289
+\l__color_backend_stack_int=\count293
 \l__pdf_internal_box=\box55
 )
-(./documentation.aux)
+(./documentation.aux
+
+LaTeX Warning: Label `storage' multiply defined.
+
+)
 \openout1 = `documentation.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 16.
+LaTeX Font Info:    ... okay on input line 16.
 
 -- Lines per column: 56 (exact).
 (/usr/local/texlive/2021/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count290
-\scratchdimen=\dimen177
+\scratchcounter=\count294
+\scratchdimen=\dimen190
 \scratchbox=\box56
-\nofMPsegments=\count291
-\nofMParguments=\count292
+\nofMPsegments=\count295
+\nofMParguments=\count296
 \everyMPshowfont=\toks26
-\MPscratchCnt=\count293
-\MPscratchDim=\dimen178
-\MPnumerator=\count294
-\makeMPintoPDFobject=\count295
+\MPscratchCnt=\count297
+\MPscratchDim=\dimen191
+\MPnumerator=\count298
+\makeMPintoPDFobject=\count299
 \everyMPtoPDFconversion=\toks27
 ) (/usr/local/texlive/2021/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
@@ -341,15 +365,15 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-\c@lstlisting=\count296
-LaTeX Font Info:    Calculating math sizes for size <11> on input line 44.
-LaTeX Font Info:    Trying to load font information for U+msa on input line 44.
+\c@lstlisting=\count300
+LaTeX Font Info:    Calculating math sizes for size <11> on input line 45.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 45.
 
 
 (/usr/local/texlive/2021/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 44.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 45.
 
 
 (/usr/local/texlive/2021/texmf-dist/tex/latex/amsfonts/umsb.fd
@@ -358,7 +382,7 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 <database.png, id=1, 548.0475pt x 588.1975pt>
 File: database.png Graphic file (type png)
 <use database.png>
-Package pdftex.def Info: database.png  used on input line 77.
+Package pdftex.def Info: database.png  used on input line 78.
 (pdftex.def)             Requested size: 129.0pt x 138.4508pt.
  [1{/usr/local/texlive/2021/texmf-var/fonts/map/pdftex/updmap/pdftex.map}
 
@@ -371,19 +395,19 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.214 	\begin{algpsuedocode}
+l.215 	\begin{algpsuedocode}
                             
 ? 
 ! Missing \endcsname inserted.
 <to be read again> 
                    \ALG@currentblock@0 
-l.218 	\Procedure
+l.219 	\Procedure
                  {BucketWrite}{$i$}
 ? 
 ! Extra \endcsname.
 \ALG@makebeginrepeat ...\ALG@thisblock \endcsname 
                                                   \relax \def \ALG@thisblock...
-l.218 	\Procedure
+l.219 	\Procedure
                  {BucketWrite}{$i$}
 ? 
 
@@ -393,7 +417,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.218 	\Procedure
+l.219 	\Procedure
                  {BucketWrite}{$i$}
 ? 
 
@@ -403,7 +427,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.219 	\State
+l.220 	\State
               $c\gets Creds$
 ? 
 
@@ -413,7 +437,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.220 	\If
+l.221 	\If
           {$b$.empty()}
 ? 
 
@@ -423,7 +447,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.221 	\State
+l.222 	\State
               $b\gets Bucket$
 ? 
 
@@ -433,7 +457,7 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.222 	\Else
+l.223 	\Else
             
 ? 
 
@@ -443,11 +467,11 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.223 	\State
+l.224 	\State
               $Threads[$i$] \gets b$
 ? 
 ! Undefined control sequence.
-l.224 	\EndElse
+l.225 	\EndElse
                
 ? 
 
@@ -457,27 +481,185 @@ See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.225 	\EndProcedure
+l.226 	\EndProcedure
                     
 ? 
 ! Missing number, treated as zero.
 <to be read again> 
                    \ALG@b@2@EndProcedure@0 
-l.225 	\EndProcedure
+l.226 	\EndProcedure
                     
 ? 
 
-! LaTeX Error: \begin{algorithm} on input line 212 ended by \end{algpsuedocode}
+! LaTeX Error: \begin{algorithm} on input line 213 ended by \end{algpsuedocode}
 .
 
 See the LaTeX manual or LaTeX Companion for explanation.
 Type  H <return>  for immediate help.
  ...                                              
                                                   
-l.226 	\end{algpsuedocode}
+l.227 	\end{algpsuedocode}
                           
 ? 
-[2] [3]
+
+! LaTeX Error: Environment algpsuedocode undefined.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.244 	\begin{algpsuedocode}
+                            
+? 
+! Missing \endcsname inserted.
+<to be read again> 
+                   \ALG@currentblock@2 
+l.245 	\Procedure
+                 {chunkFile}{$file$}
+? 
+! Extra \endcsname.
+\ALG@makebeginrepeat ...\ALG@thisblock \endcsname 
+                                                  \relax \def \ALG@thisblock...
+l.245 	\Procedure
+                 {chunkFile}{$file$}
+? 
+
+! LaTeX Error: Lonely \item--perhaps a missing list environment.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.245 	\Procedure
+                 {chunkFile}{$file$}
+? 
+
+! LaTeX Error: Lonely \item--perhaps a missing list environment.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.247 	\EndProcedure
+                    
+? 
+! Missing \endcsname inserted.
+<to be read again> 
+                   \ALG@currentblock@2 
+l.248 	\Procedure
+                 {write}{$file$}
+? 
+! Extra \endcsname.
+\ALG@makebeginrepeat ...\ALG@thisblock \endcsname 
+                                                  \relax \def \ALG@thisblock...
+l.248 	\Procedure
+                 {write}{$file$}
+? 
+
+! LaTeX Error: Lonely \item--perhaps a missing list environment.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.248 	\Procedure
+                 {write}{$file$}
+? 
+
+! LaTeX Error: Lonely \item--perhaps a missing list environment.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.249 	\State
+              $ciph\gets Cipher$
+? 
+
+! LaTeX Error: Lonely \item--perhaps a missing list environment.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.250 	\State
+              $keystore\gets [...]$
+? 
+
+! LaTeX Error: Lonely \item--perhaps a missing list environment.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.251 	\State
+              $chunks\gets$ chunkFile($file$)
+? 
+
+! LaTeX Error: \begin{algorithm} on input line 242 ended by \end{algpsuedocode}
+.
+
+See the LaTeX manual or LaTeX Companion for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.252 	\end{algpsuedocode}
+                          
+? 
+[2]
+<work-stealing.png, id=21, 790.955pt x 361.35pt>
+File: work-stealing.png Graphic file (type png)
+<use work-stealing.png>
+Package pdftex.def Info: work-stealing.png  used on input line 300.
+(pdftex.def)             Requested size: 232.19843pt x 106.07903pt.
+ [3 <./work-stealing.png>]
+<encryption-speed-line.png, id=26, 957.5775pt x 648.4225pt>
+File: encryption-speed-line.png Graphic file (type png)
+<use encryption-speed-line.png>
+Package pdftex.def Info: encryption-speed-line.png  used on input line 385.
+(pdftex.def)             Requested size: 232.19843pt x 157.22742pt.
+<execution-improvement.png, id=27, 433.62pt x 289.08pt>
+File: execution-improvement.png Graphic file (type png)
+<use execution-improvement.png>
+Package pdftex.def Info: execution-improvement.png  used on input line 393.
+(pdftex.def)             Requested size: 258.0pt x 172.00693pt.
+<execution-speedup.png, id=28, 433.62pt x 289.08pt>
+File: execution-speedup.png Graphic file (type png)
+<use execution-speedup.png>
+Package pdftex.def Info: execution-speedup.png  used on input line 394.
+(pdftex.def)             Requested size: 258.0pt x 172.00693pt.
+
+Overfull \hbox (6.0pt too wide) in paragraph at lines 393--395
+ [][] 
+ []
+
+
+Overfull \hbox (6.0pt too wide) in paragraph at lines 393--395
+ [] 
+ []
+
+[4 <./encryption-speed-line.png> <./execution-improvement.png> <./execution-spe
+edup.png>]
+Overfull \hbox (64.82849pt too wide) in paragraph at lines 485--486
+[]\OT1/ptm/m/n/8 https://developer.mozilla.org/en-US/docs/Web/JavaScript/Refere
+nce/Global[]Objects/Promise 
+ []
+
+! Misplaced alignment tab character &.
+l.487 \bibitem{b9} Pfosi, J., Wood, R., &
+                                         amp; Zhou, H. (n.d.). A Comparison ...
+
+? 
+
+Underfull \hbox (badness 7613) in paragraph at lines 487--489
+[]\OT1/ptm/m/n/8 Pfosi, J., Wood, R., amp; Zhou, H. (n.d.). A Com-par-i-son
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 487--489
+\OT1/ptm/m/n/8 of Con-cur-rency in Rust and C. Github. Re-trieved from
+ []
+
 
 ** Conference Paper **
 Before submitting the final camera ready copy, remember to:
@@ -489,31 +671,33 @@ Before submitting the final camera ready copy, remember to:
  uses only Type 1 fonts and that every step in the generation
  process uses the appropriate paper size.
 
-[4
+[5] (./documentation.aux)
 
-] (./documentation.aux) ) 
+LaTeX Warning: There were multiply-defined labels.
+
+ ) 
 Here is how much of TeX's memory you used:
- 5744 strings out of 478994
- 83674 string characters out of 5858184
- 393165 words of memory out of 5000000
- 23178 multiletter control sequences out of 15000+600000
- 440935 words of font info for 101 fonts, out of 8000000 for 9000
+ 5859 strings out of 478994
+ 85438 string characters out of 5858184
+ 394958 words of memory out of 5000000
+ 23281 multiletter control sequences out of 15000+600000
+ 444847 words of font info for 112 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  68i,11n,74p,292b,325s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/local/texlive/2021/texmf-dist/fonts/enc/dvips/ba
-se/8r.enc}</usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cm
-mi10.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmm
-i7.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10
-.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.
-pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/public/amsfonts/symbols/msb
-m10.pfb></usr/local/texlive/2021/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></
-usr/local/texlive/2021/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/local
-/texlive/2021/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2
-021/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on documentation.pdf (4 pages, 106189 bytes).
+{/usr/local/texlive/2021/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/t
+exlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/te
+xlive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/local/texl
+ive/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/local/texliv
+e/2021/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/texlive
+/2021/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></usr/local/tex
+live/2021/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2021/
+texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/local/texlive/2021/texmf-dis
+t/fonts/type1/urw/times/utmr8a.pfb></usr/local/texlive/2021/texmf-dist/fonts/ty
+pe1/urw/times/utmri8a.pfb>
+Output written on documentation.pdf (5 pages, 252940 bytes).
 PDF statistics:
- 57 PDF objects out of 1000 (max. 8388607)
- 39 compressed objects within 1 object stream
+ 68 PDF objects out of 1000 (max. 8388607)
+ 41 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 6 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 26 words of extra memory for PDF output out of 10000 (max. 10000000)
 

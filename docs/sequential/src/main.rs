@@ -10,12 +10,11 @@ use clap::Parser;
 use cli_args::{CLIArgs, Commands, EncryptCommand};
 use crypto::KeyStore;
 use dotenv::dotenv;
-use rayon::prelude::*;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use tokio_stream::StreamExt;
 use uuid::Uuid;
+use std::time::SystemTime;
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +23,11 @@ async fn main() {
     let args = CLIArgs::parse();
 
     match &args.command {
-        Commands::Encrypt(command) => encrypt(&command).await,
+        Commands::Encrypt(command) => {
+            let now = SystemTime::now();
+            encrypt(&command).await;
+            println!("Elapsed: {} ms", now.elapsed().unwrap().as_millis());
+        },
         Commands::Decrypt(command) => crypto::decrypt_to_file(&command).await,
         Commands::Clear(command) => aws::clear_directory(&command.dir_name).await,
         Commands::List(command) => {
@@ -71,7 +74,7 @@ async fn encrypt(args: &EncryptCommand) {
     let cipher_key = Key::from_slice(keystore.encryption_key.as_bytes());
     let cipher = ChaCha20Poly1305::new(cipher_key);
     let file_content = read_file(&file_path);
-    let chunks = file_content.par_chunks(*chunk_size);
+    let chunks = file_content.chunks(*chunk_size);
 
     if !*use_aws {
         match std::fs::create_dir(&output_dir) {
@@ -80,48 +83,32 @@ async fn encrypt(args: &EncryptCommand) {
         }
     }
 
-    // Parallel iterate through chunks and map each chunk to a nonce key
-    // and generate byte string by encrypting the chunk with the cipher, 
-    // chunk, and nonce key.
-    let something = chunks
-        .into_par_iter()
-        .enumerate()
-        .map(|(index, chunk)| {
-            let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
-            let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
-            let filename = format!("{output_dir}/{index}_{}.bin", Uuid::new_v4().to_string());
+    // If the output directory is passed, we'll save the chunks to the user's own
+    // computer, otherwise, we'll upload it to the AWS S3 bucket
+    for (index, chunk) in chunks.into_iter().enumerate() {
+        let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
+        let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
+        let filename = format!("{output_dir}/{index}_{}.bin", Uuid::new_v4().to_string());
 
-            if !*use_aws {
-                write_to_file(&filename, &bytes);
-            }
-
-            return (nonce_key, filename, bytes);
-        })
-        .collect::<Vec<_>>();
-
-    for (nonce_key, filename, _) in &something {
-        keystore.nonce.insert(filename.clone(), nonce_key.clone());
-    }
-
-    // Use tokio runtime to write to S3 bucket
-    if *use_aws {
-        let mut stream = tokio_stream::iter(something);
-
-        while let Some((_, filename, bytes)) = stream.next().await {
+        if *use_aws {
             aws::write_to_bucket(&filename, bytes).await;
+        } else {
+            write_to_file(&filename, bytes);
         }
+
+        keystore.nonce.insert(filename, nonce_key);
     }
 
-    // Write keystore to output file
     keystore.write_to_file(&format!("keystore-{output_dir}.json"));
 }
 
-fn write_to_file(filename: &str, bytes: &Vec<u8>) {
+fn write_to_file(filename: &str, bytes: Vec<u8>) {
     let mut file = File::create(filename).expect(&format!("Failed to open file: {filename}"));
 
-    match file.write(bytes) {
-        Ok(bytes) => {}
-        Err(why) => {}
+    match file.write(&bytes) {
+        // Ok(bytes) => println!("{filename} saved => {bytes} bytes"),
+        Ok(_) => {},
+        Err(why) => println!("Error saving encrypted file: {why}"),
     }
 }
 

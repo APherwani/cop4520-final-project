@@ -9,6 +9,7 @@
 \usepackage{xcolor}
 \usepackage{graphicx}
 \usepackage{listings}
+\usepackage{booktabs}
 \graphicspath{ {./} }
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -226,6 +227,31 @@ The parallelized storage and retrieval algorithm is described below.
 	\end{algpsuedocode}
 \end{algorithm}
 
+% create cipher and keystore
+% chunk the file into small chunks
+% parallel iterate (map and collect):
+%   encrypt chunks
+%   create random filename for chunk
+%   return (encryption_scheme, filename, encrypted_bytes)
+% create filenames with the chunk index
+% for each encrypted chunk:
+%   create an async function to write this chunk to aws bucket
+%   create a futures stream with a buffer for the functions
+%   execute each function
+
+\begin{algorithm}
+	\caption{Parallelized Encryption \& Bucket Storage}\label{storage}
+	\begin{algpsuedocode}
+	\Procedure{chunkFile}{$file$}
+	\Return $chunks$
+	\EndProcedure
+	\Procedure{write}{$file$}
+	\State $ciph\gets Cipher$
+	\State $keystore\gets [...]$
+	\State $chunks\gets$ chunkFile($file$)
+	\end{algpsuedocode}
+\end{algorithm}
+
 \subsection{Storage and Retrieval}
 
 In order to simulate the experience of storing and retrieving from a file store we decided to use AWS S3 buckets.
@@ -263,6 +289,26 @@ distributing work until it is all dealt with by highly parallelized task executi
 application, as chunking for multiple files may imply uneven workloads by forking more or less threads across different processors, 
 especially when working with larger files, or scaling the application in the future.
 
+Figure 2 displays the work-stealing concept with an example for two processors possessing multiple threads and a queue of CPU-bound 
+tasks that are to be balanced on the available processes. In the example, we observe that the second process, P2, is currently running less
+operations, so it has the ability to steal tasks from the threads of the first process, P1. The motivation for work-stealing is to
+limit the amount of work for a single process, and distribute the load amongst the available processesors in the form of threads. 
+
+\begin{figure}[h]
+	\caption{Work-stealing method as a means to load balance several tasks.}
+	\centering
+	\includegraphics[width=0.45\textwidth]{work-stealing.png}
+\end{figure}
+
+The futures library was used to accomodate parallel uploading of encrypted chunks to our s3 bucket. The futures library is a
+Rust crate with abstractions for asynchronous computing, of which, we employ the StreamExt trait.
+
+Futures are conceptually equivalent to the Promise objects used in other 
+languages, which signifies the awaited response from an asynchronous function call, which may currently be unknown when the Promise
+is instantiated. As such, Futures will indicate the outcome of an asynchronous operation (success or failure). In our code, the StreamExt 
+trait and enclosed .iter() function is used to execute each function corresponding to a bucket write operation for the s3 upload of each 
+encrypted chunk.
+
 
 \subsection{Why Rust?}
 
@@ -275,11 +321,94 @@ All that being said because Rust does a lot of unique things with it's concept o
 find ourselves wrestling with the language to get any work done.
 Tools like IntelliSense and TabNine do help speed up our development time.
 
+In addition to development benefits, Rust provides optimal runtime performance compared to other languages,
+especially for concurrent applications. Community opinion is split on the issue of concurrency for different
+programming languages and runtimes. Typically, Go and Rust are considered to have the greatest performance,
+while languages such as JavaScript coupled with popular runtimes such as Deno are easier to develop in. Between
+Go and Rust, Rust is found to have more consistency benefits [10]. Although the p\_threads library used with C-based
+languages demonstrate higher performance, they do not include the guardrails that Rust requires when building
+multithreaded programs which catch likely errors and prevent development overhead [9]. For these reasons, Rust theoretically 
+provides the optimal environment for evaluating concurrent performance in applications, even though faster methods do 
+exist. The decision to use Rust is a combination of performance and development considerations.
+
 \subsection{Testing}
 
 We believe that to write code of high quality testing is a requirement.
 This is why we are in the process of writing tests for our code.
 While this isn't a requirement and neither is it a priority for us we still believe we should do it and are doing it.
+
+\section{Results}
+We compare runtimes for sequential and parallel execution of chunk encryption and uploading for files of variable size.
+All files were encrypted with chunk size of 255,000 bytes. Results are divided between tests where uploading to the s3 bucket 
+was and was not performed, since the larger number of asynchronous, IO-bound operations presents an unpredictable confound 
+which may amplify or diminish the differences observed between sequential and parallel runtimes. 
+The Tokio runtime and Futures runtime both facilitate upload operations, whereas the Rayon runtime is used for most CPU-bound 
+tasks. In summary, we compare performance for the encryption alone (without AWS uploads) against encryption and uploading together, 
+with the understanding
+that it may reveal which operations are benefitting more of less from parallelization. Of course, we cannot run upload operations
+without first encrypting due to the architecture of our solution, so those results are not attainable nor particularly relevant.
+
+\begin{table}[ht]
+\centering
+\caption{Without AWS Uploading}
+\begin{tabular}[t]{lccc}
+\toprule
+File Size&Sequential&Parallel&\% Improvement\\
+\midrule
+71.4 MB&212 ms&67 ms&68.396\%\\
+3.34 GB&9,598 ms&5,345 ms&44.311\%\\
+10.49 GB&30,583 ms&21,100 ms&31.007\%\\
+\bottomrule
+\end{tabular}
+\end{table}%
+
+\begin{table}[ht]
+	\centering
+	\caption{With AWS Uploading}
+	\begin{tabular}[t]{lccc}
+	\toprule
+	File Size&Sequential&Parallel&\% Improvement\\
+	\midrule
+	71.4 MB&265,212 ms&8437 ms&96.819\%\\
+	3.34 GB&N/A&292,658 ms&N/A\\
+	\bottomrule
+	\end{tabular}
+\end{table}%
+
+\subsection{Without AWS uploading}
+Figure 3 shows a line graph displaying runtime performance versus file size for the sequential and parallel encryption
+algorithms.
+
+\begin{figure}[h]
+	\caption{Sequential and parallel encryption for variable file size inputs.}
+	\centering
+	\includegraphics[width=0.45\textwidth]{encryption-speed-line.png}
+\end{figure}
+
+Figure 5 shows the performance improvement by \% difference in milliseconds.
+
+\begin{figure}[h]
+	\caption{Runtime improvement of parallel over sequential execution, along with speedup.}
+	\centering
+	\includegraphics[width=0.50\textwidth]{execution-improvement.png}
+	\includegraphics[width=0.50\textwidth]{execution-speedup.png}
+\end{figure}
+
+The speedup observed without AWS uploading suggests that the Rayon functions responsible for parallelizing
+the CPU-bound tasks alone fails to provide an adequate improvement in runtime when increasing file size. This is 
+indicated by the negative slope of the speedup found by dividing the old runtime (sequential) by the new runtime (parallel).
+Specifically, we gather that this algorithm doesn't have a linear speedup, and is thus not considered to be scalable [11].
+
+\subsection{With AWS uploading}
+
+\section{Analysis}
+There are a number of viable benchmarks used to evaluate the performance of concurrent systems.
+
+\section{Conclusion}
+Due to the confounding factors introduced by IO-bound tasks, we did not observe a speedup suggesting optimal 
+parallelization that might be conducive to scalability. Instead, we saw that working with file inputs and 
+several Rust runtimes creates a bottleneck on the benefits of concurrency, and a better solution or microservice
+architecture must be engineered, if this application is to utilize parallelization in Rust.
 
 \section{Appendix}
 \subsection{Team Management and Organization}
@@ -306,6 +435,13 @@ an AWS S3 bucket.
 Over the next few weeks our efforts are going to be focused on parallelizing the work we have
 already done.
 
+In terms of performance evaluation, it would be useful to visualize the number of threads 
+versus performance for each task. Comparisons could be drawn between CPU-bound tasks, IO-bound tasks,
+and steps involving encryption and file uploads separately. This analysis could be compared with a 
+theoretical prediction by Ahmdahl's law, allowing us to evaluate the parallelization limits for each
+algorithm employed in the application. Such details are vital to scaling the distributed storage 
+system and providing state-of-the-art performance.
+
 \section{Challenges Faced}
 
 Rust has been for the large part the single biggest challenge we have faced.
@@ -315,6 +451,14 @@ One of our team members has described the experience as "learning to program all
 
 Another issue we have found is the abundance of out of date documentation.
 This is probably because Rust is a very new language and so it's ecosystem is rapidly evolving.
+
+Working with several asynchronous runtimes makes it difficult to analyze the performance of our solution. For instance,
+the work stealing implementation built into Tokio will differ slightly from Rayon. Generally, the Rayon library provides
+greater support for CPU-bound operations, while Tokio is better for IO-bound tasks. As a result, the runtimes are utilized in a patchwork manner so as to maximize performance with their
+respective strengths, depending on the type of computation they await. 
+
+\section{Program Execution}
+To run the code on a file, simply \dots
 
 \section*{Acknowledgment}
 
@@ -337,6 +481,13 @@ to the open source Rust crates that we used in our project.
 \bibitem{b3} https://tokio.rs/.
 \bibitem{b4} https://crates.io/crates/rust-s3.
 \bibitem{b5} https://aws.amazon.com/s3/faqs/.
+\bibitem{b6} https://docs.rs/futures/latest/futures/
+\bibitem{b7} https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global\_Objects/Promise
+\bibitem{b8} https://deepu.tech/concurrency-in-modern-languages-rust/
+\bibitem{b9} Pfosi, J., Wood, R., &amp; Zhou, H. (n.d.). A Comparison of Concurrency in Rust and C. Github. 
+Retrieved from https://ehnree.github.io/documents/papers/rustvsc.pdf 
+\bibitem{b10} https://deepu.tech/concurrency-in-modern-languages-final/
+\bibitem{b11} Casanova, Henri; Legrand, Arnaud; Robert, Yves (2008). Parallel Algorithms. CRC Press. p. 10.
 
 % \bibitem{b3} I. S. Jacobs and C. P. Bean, ``Fine particles, thin films and exchange anisotropy,'' in Magnetism, vol. III, G. T. Rado and H. Suhl, Eds. New York: Academic, 1963, pp. 271--350.
 % \bibitem{b4} K. Elissa, ``Title of paper if known,'' unpublished.
