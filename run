@@ -1,0 +1,8 @@
+java create_file 5000000 out5.txt
+java create_file 10000000 out10.txt
+java create_file 15000000 out15.txt
+java create_file 20000000 out20.txt
+./target/release/cop4520-final-project encrypt -f out5.txt -c 255000 --aws > time5.txt
+./target/release/cop4520-final-project encrypt -f out10.txt -c 255000 --aws > time10.txt
+./target/release/cop4520-final-project encrypt -f out15.txt -c 255000 --aws > time15.txt
+./target/release/cop4520-final-project encrypt -f out20.txt -c 255000 --aws > time20.txt

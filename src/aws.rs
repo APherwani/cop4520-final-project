@@ -10,7 +10,7 @@ pub async fn write_to_bucket(filename: &str, content: Vec<u8>) {
         .put_object(filename, &content)
         .await
         .expect("Something went wrong putting object in bucket.");
-    println!("Code is {}", _code);
+    //println!("Code is {}", _code);
 }
 
 pub async fn read_from_bucket(filename: &str) -> Vec<u8> {
@@ -69,7 +69,7 @@ fn get_bucket() -> s3::Bucket {
         Ok(credentials) => credentials,
     };
 
-    let bucket_name = "cop4520-final-project-bucket";
+    let bucket_name = "dechev-project-bucket";
     let region = "us-east-1"
         .parse()
         .expect("Something went wrong parsing region.");

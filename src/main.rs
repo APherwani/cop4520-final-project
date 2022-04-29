@@ -15,6 +15,7 @@ use rayon::prelude::*;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+use std::time::SystemTime;
 use uuid::Uuid;
 
 #[tokio::main]
@@ -24,7 +25,11 @@ async fn main() {
     let args = CLIArgs::parse();
 
     match &args.command {
-        Commands::Encrypt(command) => encrypt(&command).await,
+        Commands::Encrypt(command) => {
+            encrypt(&command).await;
+        },
+        
+        //Commands::Encrypt(command) => encrypt(&command).await,
         Commands::Decrypt(command) => crypto::decrypt_to_file(&command).await,
         Commands::Clear(command) => aws::clear_directory(&command.dir_name).await,
         Commands::List(command) => {
@@ -73,6 +78,8 @@ async fn encrypt(args: &EncryptCommand) {
     let file_content = read_file(&file_path);
     let chunks = file_content.par_chunks(*chunk_size);
 
+    let now = SystemTime::now();
+
     if !*use_aws {
         match std::fs::create_dir(&output_dir) {
             Ok(()) => (),
@@ -118,7 +125,7 @@ async fn encrypt(args: &EncryptCommand) {
             .for_each(|_| async {})
             .await;
     }
-
+    println!("Elapsed: {} ms", now.elapsed().unwrap().as_millis());
     keystore.write_to_file(&format!("keystore-{output_dir}.json"));
 }
 
@@ -126,8 +133,8 @@ fn write_to_file(filename: &str, bytes: &Vec<u8>) {
     let mut file = File::create(filename).expect(&format!("Failed to open file: {filename}"));
 
     match file.write(bytes) {
-        Ok(bytes) => {}
-        Err(why) => {}
+        Ok(_) => {}
+        Err(_) => {}
     }
 }
 
