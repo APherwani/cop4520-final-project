@@ -208,49 +208,13 @@ This can go right from encryption, to sending the item off to the bucket.
 On this flip side, during the retrieval process, we can potentially parallelize the retrieval from the S3 bucket all the way to decryption.
 At the moment, our code is completely sequential and we are working on parallelizing the aforementioned tasks.
 
-The parallelized storage and retrieval algorithm is described below.
+The parallelized encryption and storage algorithm is described below.
 
-\begin{algorithm}
-	\caption{Parallelized Bucket Storage}\label{storage}
-	\begin{algpsuedocode}
-		% \ForAll{$i$ \in Threads}
-		% \State BucketWrite{$i$}
-		% \Return{Response}
-	\Procedure{BucketWrite}{$i$}
-	\State $c\gets Creds$
-	\If{$b$.empty()}
-	\State $b\gets Bucket$
-	\Else
-	\State $Threads[$i$] \gets b$
-	\EndElse
-	\EndProcedure
-	\end{algpsuedocode}
-\end{algorithm}
-
-% create cipher and keystore
-% chunk the file into small chunks
-% parallel iterate (map and collect):
-%   encrypt chunks
-%   create random filename for chunk
-%   return (encryption_scheme, filename, encrypted_bytes)
-% create filenames with the chunk index
-% for each encrypted chunk:
-%   create an async function to write this chunk to aws bucket
-%   create a futures stream with a buffer for the functions
-%   execute each function
-
-\begin{algorithm}
-	\caption{Parallelized Encryption \& Bucket Storage}\label{storage}
-	\begin{algpsuedocode}
-	\Procedure{chunkFile}{$file$}
-	\Return $chunks$
-	\EndProcedure
-	\Procedure{write}{$file$}
-	\State $ciph\gets Cipher$
-	\State $keystore\gets [...]$
-	\State $chunks\gets$ chunkFile($file$)
-	\end{algpsuedocode}
-\end{algorithm}
+\begin{figure}[h]
+	\caption{General code for parallel encryption and upload.}
+	\centering
+	\includegraphics[width=0.50\textwidth]{algo.png}
+\end{figure}
 
 \subsection{Storage and Retrieval}
 
@@ -347,35 +311,55 @@ tasks. In summary, we compare performance for the encryption alone (without AWS 
 with the understanding
 that it may reveal which operations are benefitting more of less from parallelization. Of course, we cannot run upload operations
 without first encrypting due to the architecture of our solution, so those results are not attainable nor particularly relevant.
+Since uploading to AWS takes significantly longer and costs money, we test smaller file sizes to compare sequential and parallel, 
+and for testing without uploads, we use larger file sizes. 
 
-\begin{table}[ht]
-\centering
-\caption{Without AWS Uploading}
-\begin{tabular}[t]{lccc}
-\toprule
-File Size&Sequential&Parallel&\% Improvement\\
-\midrule
-71.4 MB&212 ms&67 ms&68.396\%\\
-3.34 GB&9,598 ms&5,345 ms&44.311\%\\
-10.49 GB&30,583 ms&21,100 ms&31.007\%\\
-\bottomrule
-\end{tabular}
-\end{table}%
+\subsection{Without AWS uploading}
+The speedup observed without AWS uploading suggests that the Rayon functions responsible for parallelizing
+the CPU-bound tasks alone fails to provide an adequate improvement in runtime when increasing file size. This is 
+indicated by the negative slope of the speedup found by dividing the old runtime (sequential) by the new runtime (parallel).
+Specifically, we gather that this algorithm doesn't have a linear speedup, and is thus not considered to be scalable [11].
+
+\subsection{With AWS uploading}
+
+\subsection{Other Filetypes}
+As a proof of concept for our application's performance, we demonstrate parallel improvements on 
+a variety of filetypes. In the example given, we measure time to completion including the sequential chunking
+of the given file. In this instance, the file provided is our midterm presentation video, approximately 20 minutes 
+in length. The chunking times are included as we wish to demonstrate the viability of the solution in a real-world
+setting. The .fna, or FASTA file format used in genomics was tested as well, to further our proof of concept. The 
+file used is the entirety of the human genome, including 3.8 billion nucleotides (characters).
 
 \begin{table}[ht]
 	\centering
-	\caption{With AWS Uploading}
-	\begin{tabular}[t]{lccc}
+	\caption{Without AWS Uploading}
+	\begin{tabular}[t]{lcccc}
 	\toprule
-	File Size&Sequential&Parallel&\% Improvement\\
+	Type&File Size&Sequential&Parallel&\% Improvement\\
 	\midrule
-	71.4 MB&265,212 ms&8437 ms&96.819\%\\
-	3.34 GB&N/A&292,658 ms&N/A\\
+	.mkv&71.4 MB&212 ms&67 ms&68.396\%\\
+	.fna&3.34 GB&9,598 ms&5,345 ms&44.311\%\\
+	\bottomrule
+	\end{tabular}
+\end{table}%
+	
+\begin{table}[ht]
+	\centering
+	\caption{With AWS Uploading}
+	\begin{tabular}[t]{lcccc}
+	\toprule
+	Type&File Size&Sequential&Parallel&\% Improvement\\
+	\midrule
+	.mkv&71.4 MB&265,212 ms&8437 ms&96.819\%\\
+	.fna&3.34 GB&N/A&292,658 ms&N/A\\
 	\bottomrule
 	\end{tabular}
 \end{table}%
 
-\subsection{Without AWS uploading}
+To further test the real-world context of our application, we show marginal improvements with
+parallel execution, even when chunking of files is still sequential. As such, we include 
+runtime performance and parallel speedup for an experiment which includes the sequential chunking.
+
 Figure 3 shows a line graph displaying runtime performance versus file size for the sequential and parallel encryption
 algorithms.
 
@@ -394,13 +378,6 @@ Figure 5 shows the performance improvement by \% difference in milliseconds.
 	\includegraphics[width=0.50\textwidth]{execution-speedup.png}
 \end{figure}
 
-The speedup observed without AWS uploading suggests that the Rayon functions responsible for parallelizing
-the CPU-bound tasks alone fails to provide an adequate improvement in runtime when increasing file size. This is 
-indicated by the negative slope of the speedup found by dividing the old runtime (sequential) by the new runtime (parallel).
-Specifically, we gather that this algorithm doesn't have a linear speedup, and is thus not considered to be scalable [11].
-
-\subsection{With AWS uploading}
-
 \section{Analysis}
 There are a number of viable benchmarks used to evaluate the performance of concurrent systems.
 
@@ -409,6 +386,8 @@ Due to the confounding factors introduced by IO-bound tasks, we did not observe 
 parallelization that might be conducive to scalability. Instead, we saw that working with file inputs and 
 several Rust runtimes creates a bottleneck on the benefits of concurrency, and a better solution or microservice
 architecture must be engineered, if this application is to utilize parallelization in Rust.
+In addition to testing our solution on normal text files of variable byte sizes, we ran our code on our midterm 
+project video by using the .mp4 and .fna files as input. Here, we saw runtime improvements with parallel
 
 \section{Appendix}
 \subsection{Team Management and Organization}
@@ -458,7 +437,20 @@ greater support for CPU-bound operations, while Tokio is better for IO-bound tas
 respective strengths, depending on the type of computation they await. 
 
 \section{Program Execution}
-To run the code on a file, simply \dots
+To run our code, in the home directory of the project:
+
+Type \begin{verbatim}cargo build -r\end{verbatim} 
+
+Then type \begin{verbatim}./target/release/cop4520-final-project -h\end{verbatim}
+
+This will give you all instructions.
+
+Example run:
+\begin{verbatim}./target/release/cop4520-final-project 
+	encrypt -f 
+	<path_to_file> -c <chunk_size>\end{verbatim}
+
+To run this with our script, type:
 
 \section*{Acknowledgment}
 
