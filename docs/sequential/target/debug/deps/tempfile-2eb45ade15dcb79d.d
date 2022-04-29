@@ -1,0 +1,12 @@
+/Users/joeyg/Desktop/cop4520-final-project/docs/sequential/target/debug/deps/tempfile-2eb45ade15dcb79d.rmeta: /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/lib.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/dir.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/error.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/file/mod.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/file/imp/mod.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/spooled.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/util.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/file/imp/unix.rs
+
+/Users/joeyg/Desktop/cop4520-final-project/docs/sequential/target/debug/deps/tempfile-2eb45ade15dcb79d.d: /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/lib.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/dir.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/error.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/file/mod.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/file/imp/mod.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/spooled.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/util.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/file/imp/unix.rs
+
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/lib.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/dir.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/error.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/file/mod.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/file/imp/mod.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/spooled.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/util.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tempfile-3.3.0/src/file/imp/unix.rs:

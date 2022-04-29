@@ -1,0 +1,13 @@
+/Users/joeyg/Desktop/cop4520-final-project/docs/sequential/target/debug/deps/tracing-bc9bac4d04e9de00.rmeta: /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/lib.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/macros.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/dispatcher.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/field.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/instrument.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/level_filters.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/span.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/stdlib.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/subscriber.rs
+
+/Users/joeyg/Desktop/cop4520-final-project/docs/sequential/target/debug/deps/tracing-bc9bac4d04e9de00.d: /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/lib.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/macros.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/dispatcher.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/field.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/instrument.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/level_filters.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/span.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/stdlib.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/subscriber.rs
+
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/lib.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/macros.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/dispatcher.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/field.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/instrument.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/level_filters.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/span.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/stdlib.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/tracing-0.1.34/src/subscriber.rs:

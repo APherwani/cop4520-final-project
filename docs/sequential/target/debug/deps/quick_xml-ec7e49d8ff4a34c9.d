@@ -1,0 +1,12 @@
+/Users/joeyg/Desktop/cop4520-final-project/docs/sequential/target/debug/deps/quick_xml-ec7e49d8ff4a34c9.rmeta: /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/lib.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/errors.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/escapei.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/events/mod.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/events/attributes.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/reader.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/utils.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/writer.rs
+
+/Users/joeyg/Desktop/cop4520-final-project/docs/sequential/target/debug/deps/quick_xml-ec7e49d8ff4a34c9.d: /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/lib.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/errors.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/escapei.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/events/mod.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/events/attributes.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/reader.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/utils.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/writer.rs
+
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/lib.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/errors.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/escapei.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/events/mod.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/events/attributes.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/reader.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/utils.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/quick-xml-0.20.0/src/writer.rs:

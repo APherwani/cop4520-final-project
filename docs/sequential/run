@@ -1,10 +1,4 @@
-#!/bin/bash
-for i in $(seq 5000000 5000000 20000000)
-do
-    size=$(printf "%.f" $i)
-    echo "Testing input of $size bytes"
-    java create_file zeros.txt $size
-    ./target/release/cop4520-final-project encrypt -f zeros.txt -c 255000 -o out
-    rm -rf ./out
-    rm keystore-out.json
-done
+./target/release/cop4520-final-project encrypt -f out5.txt -c 255000 > time5.txt
+./target/release/cop4520-final-project encrypt -f out10.txt -c 255000 > time10.txt
+./target/release/cop4520-final-project encrypt -f out15.txt -c 255000 > time15.txt
+./target/release/cop4520-final-project encrypt -f out20.txt -c 255000 > time20.txt

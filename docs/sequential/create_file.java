@@ -4,7 +4,7 @@ public class create_file {
         String path = args[1];
         File f = new File(path);
         PrintWriter out = new PrintWriter(f);
-        for (int i = 0; i < Integer.parseInt(args[0]); i++) {
+        for (int i = 0; i < Long.parseLong(args[0]); i++) {
             out.print(0);
         }
         out.flush();

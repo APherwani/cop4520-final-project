@@ -24,9 +24,7 @@ async fn main() {
 
     match &args.command {
         Commands::Encrypt(command) => {
-            let now = SystemTime::now();
             encrypt(&command).await;
-            println!("Elapsed: {} ms", now.elapsed().unwrap().as_millis());
         },
         Commands::Decrypt(command) => crypto::decrypt_to_file(&command).await,
         Commands::Clear(command) => aws::clear_directory(&command.dir_name).await,
@@ -76,29 +74,31 @@ async fn encrypt(args: &EncryptCommand) {
     let file_content = read_file(&file_path);
     let chunks = file_content.chunks(*chunk_size);
 
+    let now = SystemTime::now();
+    
     if !*use_aws {
         match std::fs::create_dir(&output_dir) {
             Ok(()) => (),
             Err(why) => panic!("Failed to create {output_dir}: {why}"),
         }
     }
-
+    
     // If the output directory is passed, we'll save the chunks to the user's own
     // computer, otherwise, we'll upload it to the AWS S3 bucket
     for (index, chunk) in chunks.into_iter().enumerate() {
         let nonce_key = Uuid::new_v4().to_string()[24..].to_string();
         let bytes = crypto::encrypt(&chunk, &cipher, nonce_key.as_ref());
         let filename = format!("{output_dir}/{index}_{}.bin", Uuid::new_v4().to_string());
-
+        
         if *use_aws {
             aws::write_to_bucket(&filename, bytes).await;
         } else {
             write_to_file(&filename, bytes);
         }
-
+        
         keystore.nonce.insert(filename, nonce_key);
     }
-
+    println!("Elapsed: {} ms", now.elapsed().unwrap().as_millis());    
     keystore.write_to_file(&format!("keystore-{output_dir}.json"));
 }
 

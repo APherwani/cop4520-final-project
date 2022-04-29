@@ -1,0 +1,11 @@
+#!/bin/bash
+for i in $(seq 500000000 500000000 10000000000)
+do
+    size=$(printf "%.f" $i)
+    echo "Testing input of $size bytes"
+    java create_file $size zeros.txt
+    ./target/release/cop4520-final-project encrypt -f zeros.txt -c 255000 -o out
+    rm -rf ./out
+    rm keystore-out.json
+    rm zeros.txt
+done
