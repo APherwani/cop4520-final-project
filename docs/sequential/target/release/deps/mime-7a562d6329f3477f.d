@@ -1,0 +1,8 @@
+/Users/joeyg/Desktop/cop4520-final-project/docs/sequential/target/release/deps/mime-7a562d6329f3477f.rmeta: /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/mime-0.3.16/src/lib.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/mime-0.3.16/src/parse.rs
+
+/Users/joeyg/Desktop/cop4520-final-project/docs/sequential/target/release/deps/libmime-7a562d6329f3477f.rlib: /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/mime-0.3.16/src/lib.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/mime-0.3.16/src/parse.rs
+
+/Users/joeyg/Desktop/cop4520-final-project/docs/sequential/target/release/deps/mime-7a562d6329f3477f.d: /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/mime-0.3.16/src/lib.rs /Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/mime-0.3.16/src/parse.rs
+
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/mime-0.3.16/src/lib.rs:
+/Users/joeyg/.cargo/registry/src/github.com-1ecc6299db9ec823/mime-0.3.16/src/parse.rs:
